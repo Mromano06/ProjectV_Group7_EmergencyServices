@@ -8,6 +8,7 @@ bin/
 obj/
 Debug/
 Release/
+docs/
 
 # Visual Studio files
 .vs/
