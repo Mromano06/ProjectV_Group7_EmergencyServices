@@ -1,0 +1,73 @@
+
+# ====================================
+# C# / ASP.NET Core
+# ====================================
+
+# Build outputs
+bin/
+obj/
+Debug/
+Release/
+
+# Visual Studio files
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Test results
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+
+# ====================================
+# React / Node.js
+# ====================================
+
+node_modules/
+dist/
+build/
+.vite/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# TypeScript cache
+*.tsbuildinfo
+
+# ====================================
+# Environment / Secrets
+# ====================================
+
+.env
+.env.*
+!.env.example
+
+# Local ASP.NET Core settings
+appsettings.*.local.json
+
+# ====================================
+# Docker
+# ====================================
+
+# Local database volumes / data
+docker-data/
+
+# ====================================
+# VS Code
+# ====================================
+
+# Local editor configuration
+.vscode/
+
+# ====================================
+# Operating System
+# ====================================
+
+.DS_Store
+Thumbs.db
