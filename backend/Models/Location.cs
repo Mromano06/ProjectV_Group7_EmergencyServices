@@ -1,12 +1,11 @@
-using Microsoft.EntityFrameworkCore;
 
 namespace EmergencyServices.Api.Models;
 
 public class Location
 {
-    public string Street{get; set} = string.Empty;
+    public string Street{get; set;} = string.Empty;
     public string Address{get; set;} =string.Empty;
-    public string PostalCode{get;set;} = string.empty;
+    public string PostalCode{get;set;} = string.Empty;
 
 
     ///<summary>
