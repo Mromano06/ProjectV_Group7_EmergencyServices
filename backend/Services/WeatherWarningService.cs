@@ -209,13 +209,15 @@ public class WeatherWarningService : IWeatherWarningService
         // if (!await _db.Incidents.AnyAsync(i => i.Id == incidentId))
         //     return WarningResult.Invalid("unknown_incident", $"No incident with id {incidentId}.");
 
-        warning.IncidentLinks.Add(new WarningIncidentLink
+        var link = new WarningIncidentLink
         {
             WeatherWarningId = warning.Id,
             IncidentId = incidentId,
             CreatedBy = userId
-        });
+        };
 
+        // Add it through the DbSet so EF knows it's a NEW row (INSERT), not an existing one (UPDATE).
+        _db.WarningIncidentLinks.Add(link);
         await _db.SaveChangesAsync();
         return WarningResult.Ok(warning);
     }

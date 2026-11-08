@@ -4,8 +4,7 @@
 ### 2) Check the port matches Properties/launchSettings.json.
 
 @host = http://localhost:5227
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1bmlxdWVfbmFtZSI6ImFuZ2VsIiwic3ViIjoiYW5nZWwiLCJqdGkiOiIzMjVkZDRmNyIsInJvbGUiOiJlbWVyZ2VuY3k6QWRtaW4iLCJhdWQiOlsiaHR0cDovL2xvY2FsaG9zdDo1MjI3IiwiaHR0cHM6Ly9sb2NhbGhvc3Q6NzI5MyJdLCJuYmYiOjE3OTQxNTkwNTcsImV4cCI6MTgwMjEwNzg1NywiaWF0IjoxNzk0MTU5MDU3LCJpc3MiOiJkb3RuZXQtdXNlci1qd3RzIn0.Uynjj_zMtmQwlIwnbo-qKFea5GTKVdFk2v-H2nnJ1NU
-
+@token = PASTE-YOUR-ADMIN-TOKEN-HERE
 ### Issue new warning
 # @name created
 POST {{host}}/api/emergency/v1/weather-warnings
