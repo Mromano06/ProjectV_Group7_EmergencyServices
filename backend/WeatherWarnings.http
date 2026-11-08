@@ -1,0 +1,102 @@
+### Weather / public warnings – test requests
+### Open this file in VS Code (REST Client extension) or Visual Studio and click "Send Request".
+### 1) Paste an Admin token below (see SETUP step 5).
+### 2) Check the port matches Properties/launchSettings.json.
+
+@host = http://localhost:5227
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1bmlxdWVfbmFtZSI6ImFuZ2VsIiwic3ViIjoiYW5nZWwiLCJqdGkiOiIzMjVkZDRmNyIsInJvbGUiOiJlbWVyZ2VuY3k6QWRtaW4iLCJhdWQiOlsiaHR0cDovL2xvY2FsaG9zdDo1MjI3IiwiaHR0cHM6Ly9sb2NhbGhvc3Q6NzI5MyJdLCJuYmYiOjE3OTQxNTkwNTcsImV4cCI6MTgwMjEwNzg1NywiaWF0IjoxNzk0MTU5MDU3LCJpc3MiOiJkb3RuZXQtdXNlci1qd3RzIn0.Uynjj_zMtmQwlIwnbo-qKFea5GTKVdFk2v-H2nnJ1NU
+
+### Issue new warning
+# @name created
+POST {{host}}/api/emergency/v1/weather-warnings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "type": "Snowfall",
+  "severity": "Warning",
+  "area": "City-wide",
+  "description": "15-25 cm of snow expected overnight.",
+  "endsAt": "2026-12-31T23:00:00Z",
+  "affectsTransit": true
+}
+
+### Save the new warning's id from the response above
+@warningId = {{created.response.body.$.id}}
+
+### Active warnings (what the app banner calls)
+GET {{host}}/api/emergency/v1/weather-warnings?active=true
+Authorization: Bearer {{token}}
+
+### Current and past warnings (history, paged)
+GET {{host}}/api/emergency/v1/weather-warnings?page=1&pageSize=25
+Authorization: Bearer {{token}}
+
+### One warning
+GET {{host}}/api/emergency/v1/weather-warnings/{{warningId}}
+Authorization: Bearer {{token}}
+
+### Update / extend it (later endsAt)
+PUT {{host}}/api/emergency/v1/weather-warnings/{{warningId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "type": "Snowfall",
+  "severity": "Warning",
+  "area": "City-wide",
+  "description": "Extended – snow continuing into the afternoon.",
+  "endsAt": "2027-01-01T18:00:00Z",
+  "affectsTransit": true
+}
+
+### Make one random simulated warning right now (demo button)
+POST {{host}}/api/emergency/v1/weather-warnings/simulate
+Authorization: Bearer {{token}}
+
+### Link an incident to it
+POST {{host}}/api/emergency/v1/weather-warnings/{{warningId}}/incidents
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "incidentId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+}
+
+### Send it to Public Transport (502 until Transit's URL is set – that's expected)
+POST {{host}}/api/emergency/v1/weather-warnings/{{warningId}}/notify-transit
+Authorization: Bearer {{token}}
+
+### End it early
+POST {{host}}/api/emergency/v1/weather-warnings/{{warningId}}/expire
+Authorization: Bearer {{token}}
+
+### ---- Should FAIL ----
+
+### 400: bad severity, and endsAt before startsAt
+POST {{host}}/api/emergency/v1/weather-warnings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "type": "Fog",
+  "severity": "Scary",
+  "area": "Downtown",
+  "startsAt": "2026-12-02T10:00:00Z",
+  "endsAt": "2026-12-01T10:00:00Z"
+}
+
+### 409: updating a warning that has already ended (run after "End it early")
+PUT {{host}}/api/emergency/v1/weather-warnings/{{warningId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "type": "Snowfall",
+  "severity": "Warning",
+  "area": "City-wide",
+  "endsAt": "2027-01-02T18:00:00Z"
+}
+
+### 401: no token
+GET {{host}}/api/emergency/v1/weather-warnings?active=true

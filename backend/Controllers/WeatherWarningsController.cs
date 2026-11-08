@@ -93,7 +93,7 @@ public class WeatherWarningsController : ControllerBase
         return FromResult(result);
     }
 
-    /// <summary>POST /{id}/expire -> Admin ends a warning early.</summary>
+    /// <summary>POST /{id}/expire -> Admin ends a warning early. (No DELETE: we keep history.)</summary>
     [HttpPost("{id:guid}/expire")]
     [Authorize(Roles = Admin)]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -125,6 +125,22 @@ public class WeatherWarningsController : ControllerBase
                 "Public Transport could not be reached. The warning is saved; try again later.");
         }
         return Ok(WeatherWarningDto.From(result.Warning!, DateTime.UtcNow));
+    }
+
+    /// <summary>
+    /// POST /simulate -> Admin makes one random fake warning right now.
+    /// Handy during a demo so you don't have to wait for the background simulator.
+    /// </summary>
+    [HttpPost("simulate")]
+    [Authorize(Roles = Admin)]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    public async Task<IActionResult> Simulate()
+    {
+        var result = await SimulatedWarningGenerator.CreateRandomWarningAsync(_service);
+        if (result.Outcome != WarningOutcome.Ok) return FromResult(result);
+
+        var dto = WeatherWarningDto.From(result.Warning!, DateTime.UtcNow);
+        return CreatedAtAction(nameof(GetById), new { id = dto.Id }, dto);
     }
 
     /// <summary>POST /{id}/incidents -> link an incident to this warning. Body: { "incidentId": "..." }</summary>
