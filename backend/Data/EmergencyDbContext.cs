@@ -41,7 +41,6 @@ public class EmergencyDbContext : DbContext
             e.Property(w => w.Severity).HasMaxLength(20).IsRequired();
             e.Property(w => w.Area).HasMaxLength(200).IsRequired();
             e.Property(w => w.Description).HasMaxLength(2000);
-            e.Property(w => w.ExternalAlertId).HasMaxLength(200);
             e.Property(w => w.Source).HasConversion<string>().HasMaxLength(30); // enums stored as text
 
             // Speeds up the "active right now" query the banner calls constantly.
