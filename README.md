@@ -343,6 +343,8 @@ npm run dev
 ```bash
 dotnet test                                    # all tests
 dotnet test tests/EmergencyServices.UnitTests  # unit tests only
+dotnet test tests/MyApplication.Api.Tests      # Unit tests for weather warnings
+
 ```
 
 | Type | Covers |
