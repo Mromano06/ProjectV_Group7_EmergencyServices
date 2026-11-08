@@ -100,8 +100,6 @@ Detailed data flow and class diagrams are in [`docs/diagrams/`](docs/diagrams/RE
 
 ## Repository Structure
 
-> Adjust to match your team's repo. Frontend pages live in the shared frontend app (SH-U02).
-
 ```
 emergency-services/
 ├── src/
@@ -399,3 +397,8 @@ This service does **not** handle police dispatch, criminal records, fare payment
 **Emergency Services Team – City Management Enterprise System**
 Conestoga College
 
+
+To run container
+
+docker build -t emergency-services-api .
+docker run --rm -p 8080:8080 emergency-services-api
