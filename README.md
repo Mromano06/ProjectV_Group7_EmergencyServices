@@ -343,6 +343,8 @@ npm run dev
 ```bash
 dotnet test                                    # all tests
 dotnet test tests/EmergencyServices.UnitTests  # unit tests only
+dotnet test tests/MyApplication.Api.Tests      # Unit tests for weather warnings
+
 ```
 
 | Type | Covers |
@@ -399,3 +401,7 @@ This service does **not** handle police dispatch, criminal records, fare payment
 **Emergency Services Team – City Management Enterprise System**
 Conestoga College
 
+To run container
+
+docker build -t emergency-services-api .           
+docker run --rm -p 8080:8080 emergency-services-api
