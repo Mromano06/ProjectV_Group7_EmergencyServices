@@ -15,6 +15,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="11.0.0-rc.3.26522.148" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.3.1" />
   </ItemGroup>
 
 </Project>

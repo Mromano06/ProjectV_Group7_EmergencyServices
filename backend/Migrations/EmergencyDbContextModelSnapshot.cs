@@ -16,7 +16,7 @@ partial class EmergencyDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261108172311_AddWeatherWarnings";
+    public override string LastMigrationId => "20261109170510_AddHospitals";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -26,6 +26,53 @@ partial class EmergencyDbContextModelSnapshot : ModelSnapshot
             .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
         SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+        modelBuilder.Entity("MyApplication.Api.Models.Hospital", b =>
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<Guid>("CreatedBy")
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<string>("Location")
+                    .IsRequired()
+                    .HasMaxLength(500)
+                    .HasColumnType("nvarchar(500)");
+
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("nvarchar(200)");
+
+                b.Property<int>("OccupiedRooms")
+                    .HasColumnType("int");
+
+                b.Property<string>("Status")
+                    .IsRequired()
+                    .HasMaxLength(30)
+                    .HasColumnType("nvarchar(30)");
+
+                b.Property<int>("TotalRooms")
+                    .HasColumnType("int");
+
+                b.Property<DateTime?>("UpdatedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<Guid?>("UpdatedBy")
+                    .HasColumnType("uniqueidentifier");
+
+                b.HasKey("Id");
+
+                b.ToTable("Hospitals", t =>
+                    {
+                        t.HasCheckConstraint("CK_Hospitals_Capacity", "[TotalRooms] >= 0 AND [OccupiedRooms] >= 0 AND [OccupiedRooms] <= [TotalRooms]");
+                    });
+            });
 
         modelBuilder.Entity("MyApplication.Api.Models.WarningIncidentLink", b =>
             {

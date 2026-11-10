@@ -47,6 +47,9 @@ builder.Services.AddScoped<IWeatherWarningService, WeatherWarningService>();
 // Makes random fake warnings in the background (settings: "WarningSimulator" in appsettings).
 builder.Services.AddHostedService<SimulatedWarningGenerator>();
 
+// Hospital services, Locations, Availibility, Size, etc.
+builder.Services.AddScoped<IHospitalService, HospitalService>();
+
 builder.Services.AddHttpClient<ITransitWarningClient, TransitWarningClient>(client =>
 {
     var transitUrl = builder.Configuration["Services:TransitBaseUrl"];
@@ -63,6 +66,11 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+
+    // Swagger app for backend testing
+    app.UseSwaggerUI(options =>
+        options.SwaggerEndpoint("/openapi/v1.json",
+        "Emergency Services API"));
 }
 
 app.UseHttpsRedirection();
