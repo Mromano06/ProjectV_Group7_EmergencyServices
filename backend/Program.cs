@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.OpenApi;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MyApplication.Api.Clients;
@@ -27,7 +29,52 @@ builder.Services.AddControllers()
         };
     });
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+
+builder.Services.AddOpenApi(options =>
+{
+    // Tell Swagger that our API uses JWT authentication.
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        document.Components ??= new OpenApiComponents();
+
+        document.Components.SecuritySchemes =
+            new Dictionary<string, IOpenApiSecurityScheme>
+            {
+                ["Bearer"] = new OpenApiSecurityScheme
+                {
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "bearer",
+                    BearerFormat = "JWT",
+                    In = ParameterLocation.Header
+                }
+            };
+
+        return Task.CompletedTask;
+    });
+
+    // Mark endpoints requiring authorization.
+    options.AddOperationTransformer((operation, context, cancellationToken) =>
+    {
+        var requiresAuth = context.Description.ActionDescriptor
+            .EndpointMetadata
+            .OfType<IAuthorizeData>()
+            .Any();
+
+        if (requiresAuth)
+        {
+            operation.Security ??= [];
+
+            operation.Security.Add(new OpenApiSecurityRequirement
+            {
+                [new OpenApiSecuritySchemeReference(
+                    "Bearer", context.Document)] = []
+            });
+        }
+
+        return Task.CompletedTask;
+    });
+});
+
 
 // Database (SH-D01)
 // Connection string comes from appsettings / environment variables (SH-A06).
