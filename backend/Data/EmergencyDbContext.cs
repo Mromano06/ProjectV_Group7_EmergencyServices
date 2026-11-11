@@ -17,6 +17,9 @@ public class EmergencyDbContext : DbContext
     public DbSet<WeatherWarning> WeatherWarnings => Set<WeatherWarning>();
     public DbSet<WarningIncidentLink> WarningIncidentLinks => Set<WarningIncidentLink>();
 
+    // Hospitals
+    public DbSet<Hospital> Hospitals => Set<Hospital>();
+
     // Add other tables here, e.g.
     // public DbSet<Incident> Incidents => Set<Incident>();
 
@@ -59,6 +62,45 @@ public class EmergencyDbContext : DbContext
             e.HasIndex(l => new { l.WeatherWarningId, l.IncidentId }).IsUnique();
             e.HasIndex(l => l.IncidentId); // fast "which warnings is this incident linked to?"
         });
+
+        modelBuilder.Entity<Hospital>(e =>
+        {
+            e.ToTable("Hospitals");
+
+            // Hospital identification
+            e.Property(h => h.Name)
+                .HasMaxLength(200)
+                .IsRequired();
+
+            e.Property(h => h.Location)
+                .HasMaxLength(500)
+                .IsRequired();
+
+            // Room capacity
+            e.Property(h => h.TotalRooms)
+                .IsRequired();
+
+            e.Property(h => h.OccupiedRooms)
+                .IsRequired();
+
+            // Store hospital status as text
+            e.Property(h => h.Status)
+                .HasConversion<string>()
+                .HasMaxLength(30);
+
+            // Keep timestamps consistent
+            e.Property(h => h.CreatedAt)
+                .HasConversion(utc);
+
+            // Prevent invalid capacity values
+            e.ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_Hospitals_Capacity",
+                    "[TotalRooms] >= 0 AND [OccupiedRooms] >= 0 AND [OccupiedRooms] <= [TotalRooms]");
+            });
+        });
+
     }
 
     /// <summary>
