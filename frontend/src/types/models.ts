@@ -1,4 +1,4 @@
-export const INCIDENT_TYPES = ['Fire', 'Medical', 'Rescue',] as const;
+export const INCIDENT_TYPES = ['Fire', 'Medical', 'Rescue', 'Other'] as const;
 export type IncidentType = (typeof INCIDENT_TYPES)[number];
 
 export type Severity = 1 | 2 | 3 | 4; // 1 = Critical, 4 = Low
@@ -8,7 +8,7 @@ export const INCIDENT_STATUSES = [
 ] as const;
 export type IncidentStatus = (typeof INCIDENT_STATUSES)[number];
 
-export const UNIT_TYPES = ['FireTruck', 'Ambulance'] as const;
+export const UNIT_TYPES = ['FireTruck', 'Ambulance', 'Ladder'] as const;
 export type UnitType = (typeof UNIT_TYPES)[number];
 
 export type UnitStatus = 'Available' | 'Dispatched' | 'On Scene' | 'Out of Service';

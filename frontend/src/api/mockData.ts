@@ -6,7 +6,7 @@ function unit(id: number, callSign: string, type: UnitType, homeStation: string)
 
 export const INITIAL_UNITS: Unit[] = [
   unit(1, 'FireTruck 1', 'FireTruck', 'Station 1'),
-  unit(2, 'FireTruck 4', 'FireTruck', 'Station 4'),
+  unit(2, 'Ladder 2', 'Ladder', 'Station 4'),
   unit(3, 'FireTruck 1', 'FireTruck', 'Station 1'),
   unit(4, 'FireTruck 3', 'FireTruck', 'Station 3'),
   unit(5, 'Medic 2', 'Ambulance', 'Station 2'),
@@ -25,7 +25,7 @@ const TEMPLATES: Template[] = [
   { title: 'High-rise fire', incidentType: 'Fire', severity: 1, requiredUnitType: 'FireTruck' },
   { title: 'Cardiac arrest', incidentType: 'Medical', severity: 1, requiredUnitType: 'Ambulance' },
   { title: 'Vehicle collision', incidentType: 'Rescue', severity: 2, requiredUnitType: 'Ambulance' },
-  { title: 'Cat stuck in tree', incidentType: 'Rescue', severity: 4, requiredUnitType: 'FireTruck' },
+  { title: 'Cat stuck in tree', incidentType: 'Rescue', severity: 4, requiredUnitType: 'Ladder' },
 ];
 
 const LOCATIONS = [
