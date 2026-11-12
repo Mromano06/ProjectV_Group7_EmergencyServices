@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
-using MyApplication.Api.Clients;
 using MyApplication.Api.Data;
 using MyApplication.Api.Enums;
 using MyApplication.Api.Models;
@@ -9,25 +8,11 @@ using MyApplication.Api.Services;
 namespace MyApplication.Api.Tests;
 
 /// <summary>
-/// A pretend Public Transport service. Records what we sent and
-/// can be told to "fail" so we can test what happens when Transit is down.
-/// </summary>
-public class FakeTransitClient : ITransitWarningClient
-{
-    public bool ShouldSucceed { get; set; } = true;
-    public List<TransitWarningNotice> Sent { get; } = new();
-
-    public Task<bool> SendWarningNoticeAsync(TransitWarningNotice notice)
-    {
-        Sent.Add(notice);
-        return Task.FromResult(ShouldSucceed);
-    }
-}
-
-/// <summary>
 /// Tests for WeatherWarningService – the actual warning rules.
 /// Each test gets its own brand-new in-memory database, so tests can't affect each other.
 /// </summary>
+[Trait("Category", "Unit")]
+[Trait("Area", "Weather warnings")]
 public class WeatherWarningServiceTests
 {
     private static readonly Guid AdminId = Guid.NewGuid();
