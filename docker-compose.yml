@@ -1,0 +1,57 @@
+# Emergency Services – runs the whole thing with one command (SH-A04):
+#   docker compose up --build
+# Then open:
+#   App (frontend):  http://localhost:3000
+#   API directly:    http://localhost:5000/openapi/v1.json
+# Stop with Ctrl+C, or `docker compose down` (add -v to also wipe the database).
+
+services:
+
+  # ---------- SQL Server (Emergency's private database, SH-D01) ----------
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      # Local test password. Override it in a .env file next to this one (SA_PASSWORD=...) – don't commit .env (SH-A06).
+      MSSQL_SA_PASSWORD: "${SA_PASSWORD:-YourStrong!Passw0rd}"
+    volumes:
+      - emergency-db-data:/var/opt/mssql   # keeps data between restarts
+    healthcheck:
+      # "Is SQL Server ready to answer?" – the API waits for this before starting.
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q \"SELECT 1\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    # No "ports:" on purpose – only the API needs to reach it, and this way it
+    # doesn't clash with the emergency-sql container you run by hand on port 1433.
+
+  # ---------- The API (backend/Dockerfile) ----------
+  api:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      # Inside Docker the database's address is its service name "db", not localhost.
+      ConnectionStrings__EmergencyDb: "Server=db,1433;Database=EmergencyDb;User Id=sa;Password=${SA_PASSWORD:-YourStrong!Passw0rd};TrustServerCertificate=True"
+      # Create/update the tables automatically on startup (see Program.cs).
+      Database__MigrateOnStartup: "true"
+      Authentication__Schemes__Bearer__ValidIssuer: "dotnet-user-jwts"
+      Authentication__Schemes__Bearer__ValidAudiences__0: "http://localhost:5227"
+      Authentication__Schemes__Bearer__SigningKeys__0__Issuer: "dotnet-user-jwts"
+      Authentication__Schemes__Bearer__SigningKeys__0__Value: "${JWT_SIGNING_KEY}"
+    ports:
+      - "5000:8080"   # your computer's port 5000 -> the API's port 8080
+
+  # ---------- The React app (frontend/Dockerfile) ----------
+  frontend:
+    build: ./frontend
+    depends_on:
+      - api
+    ports:
+      - "3000:80"     # your computer's port 3000 -> nginx inside the container
+
+volumes:
+  emergency-db-data:
