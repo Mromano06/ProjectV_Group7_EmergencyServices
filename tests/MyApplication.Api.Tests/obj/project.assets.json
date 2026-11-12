@@ -196,9 +196,7 @@
         "type": "package",
         "dependencies": {
           "Microsoft.EntityFrameworkCore.Abstractions": "[11.0.0, 12.0.0-a)",
-          "Microsoft.EntityFrameworkCore.Analyzers": "[11.0.0, 12.0.0-a)",
-          "Microsoft.Extensions.Caching.Memory": "11.0.0",
-          "Microsoft.Extensions.Logging": "11.0.0"
+          "Microsoft.EntityFrameworkCore.Analyzers": "[11.0.0, 12.0.0-a)"
         },
         "compile": {
           "lib/net11.0/Microsoft.EntityFrameworkCore.dll": {
@@ -233,9 +231,7 @@
       "Microsoft.EntityFrameworkCore.InMemory/11.0.0": {
         "type": "package",
         "dependencies": {
-          "Microsoft.EntityFrameworkCore": "[11.0.0, 12.0.0-a)",
-          "Microsoft.Extensions.Caching.Memory": "11.0.0",
-          "Microsoft.Extensions.Logging": "11.0.0"
+          "Microsoft.EntityFrameworkCore": "[11.0.0, 12.0.0-a)"
         },
         "compile": {
           "lib/net11.0/Microsoft.EntityFrameworkCore.InMemory.dll": {
@@ -279,57 +275,6 @@
           "lib/net11.0/Microsoft.EntityFrameworkCore.SqlServer.dll": {
             "related": ".xml"
           }
-        }
-      },
-      "Microsoft.Extensions.Caching.Memory/11.0.0": {
-        "type": "package",
-        "compile": {
-          "lib/net11.0/Microsoft.Extensions.Caching.Memory.dll": {
-            "related": ".xml"
-          }
-        },
-        "runtime": {
-          "lib/net11.0/Microsoft.Extensions.Caching.Memory.dll": {
-            "related": ".xml"
-          }
-        },
-        "build": {
-          "buildTransitive/net10.0/_._": {}
-        }
-      },
-      "Microsoft.Extensions.DependencyInjection/11.0.0": {
-        "type": "package",
-        "compile": {
-          "lib/net11.0/Microsoft.Extensions.DependencyInjection.dll": {
-            "related": ".xml"
-          }
-        },
-        "runtime": {
-          "lib/net11.0/Microsoft.Extensions.DependencyInjection.dll": {
-            "related": ".xml"
-          }
-        },
-        "build": {
-          "buildTransitive/net10.0/_._": {}
-        }
-      },
-      "Microsoft.Extensions.Logging/11.0.0": {
-        "type": "package",
-        "dependencies": {
-          "Microsoft.Extensions.DependencyInjection": "11.0.0"
-        },
-        "compile": {
-          "lib/net11.0/Microsoft.Extensions.Logging.dll": {
-            "related": ".xml"
-          }
-        },
-        "runtime": {
-          "lib/net11.0/Microsoft.Extensions.Logging.dll": {
-            "related": ".xml"
-          }
-        },
-        "build": {
-          "buildTransitive/net10.0/_._": {}
         }
       },
       "Microsoft.IdentityModel.Abstractions/8.19.2": {
@@ -1256,91 +1201,6 @@
         "microsoft.entityframeworkcore.sqlserver.nuspec"
       ]
     },
-    "Microsoft.Extensions.Caching.Memory/11.0.0": {
-      "sha512": "w0nn5qRLxZC2T3sSmXj5PhrBFpGFCSFxg7E/zBi4lne0wZcZPY8of3qQDowqGobMZ3PW5qJnM1Q8fmGjL2B6Iw==",
-      "type": "package",
-      "path": "microsoft.extensions.caching.memory/11.0.0",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "Icon.png",
-        "PACKAGE.md",
-        "THIRD-PARTY-NOTICES.TXT",
-        "buildTransitive/net10.0/_._",
-        "buildTransitive/net461/Microsoft.Extensions.Caching.Memory.targets",
-        "buildTransitive/net462/_._",
-        "buildTransitive/netcoreapp2.0/Microsoft.Extensions.Caching.Memory.targets",
-        "lib/net10.0/Microsoft.Extensions.Caching.Memory.dll",
-        "lib/net10.0/Microsoft.Extensions.Caching.Memory.xml",
-        "lib/net11.0/Microsoft.Extensions.Caching.Memory.dll",
-        "lib/net11.0/Microsoft.Extensions.Caching.Memory.xml",
-        "lib/net462/Microsoft.Extensions.Caching.Memory.dll",
-        "lib/net462/Microsoft.Extensions.Caching.Memory.xml",
-        "lib/netstandard2.0/Microsoft.Extensions.Caching.Memory.dll",
-        "lib/netstandard2.0/Microsoft.Extensions.Caching.Memory.xml",
-        "microsoft.extensions.caching.memory.11.0.0.nupkg.sha512",
-        "microsoft.extensions.caching.memory.nuspec",
-        "useSharedDesignerContext.txt"
-      ]
-    },
-    "Microsoft.Extensions.DependencyInjection/11.0.0": {
-      "sha512": "KygQMITBDDPXw7+AAgdwQvVAaTXuDsc1iCAuvhO73ERxKX+d92cdbgZmpoYF7DIUq2hfs/yO2KD87uIreRy3MA==",
-      "type": "package",
-      "path": "microsoft.extensions.dependencyinjection/11.0.0",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "Icon.png",
-        "PACKAGE.md",
-        "THIRD-PARTY-NOTICES.TXT",
-        "buildTransitive/net10.0/_._",
-        "buildTransitive/net461/Microsoft.Extensions.DependencyInjection.targets",
-        "buildTransitive/net462/_._",
-        "buildTransitive/netcoreapp2.0/Microsoft.Extensions.DependencyInjection.targets",
-        "lib/net10.0/Microsoft.Extensions.DependencyInjection.dll",
-        "lib/net10.0/Microsoft.Extensions.DependencyInjection.xml",
-        "lib/net11.0/Microsoft.Extensions.DependencyInjection.dll",
-        "lib/net11.0/Microsoft.Extensions.DependencyInjection.xml",
-        "lib/net462/Microsoft.Extensions.DependencyInjection.dll",
-        "lib/net462/Microsoft.Extensions.DependencyInjection.xml",
-        "lib/netstandard2.0/Microsoft.Extensions.DependencyInjection.dll",
-        "lib/netstandard2.0/Microsoft.Extensions.DependencyInjection.xml",
-        "lib/netstandard2.1/Microsoft.Extensions.DependencyInjection.dll",
-        "lib/netstandard2.1/Microsoft.Extensions.DependencyInjection.xml",
-        "microsoft.extensions.dependencyinjection.11.0.0.nupkg.sha512",
-        "microsoft.extensions.dependencyinjection.nuspec",
-        "useSharedDesignerContext.txt"
-      ]
-    },
-    "Microsoft.Extensions.Logging/11.0.0": {
-      "sha512": "zsse8MOgo0bj2KAEsSkg9WtNAfZbHbTlGeqfhy5PGozomM3zQM0XzumSQzQ0451IWNSJWLqYaSIQEpCi2j1sCA==",
-      "type": "package",
-      "path": "microsoft.extensions.logging/11.0.0",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "Icon.png",
-        "PACKAGE.md",
-        "THIRD-PARTY-NOTICES.TXT",
-        "buildTransitive/net10.0/_._",
-        "buildTransitive/net461/Microsoft.Extensions.Logging.targets",
-        "buildTransitive/net462/_._",
-        "buildTransitive/netcoreapp2.0/Microsoft.Extensions.Logging.targets",
-        "lib/net10.0/Microsoft.Extensions.Logging.dll",
-        "lib/net10.0/Microsoft.Extensions.Logging.xml",
-        "lib/net11.0/Microsoft.Extensions.Logging.dll",
-        "lib/net11.0/Microsoft.Extensions.Logging.xml",
-        "lib/net462/Microsoft.Extensions.Logging.dll",
-        "lib/net462/Microsoft.Extensions.Logging.xml",
-        "lib/netstandard2.0/Microsoft.Extensions.Logging.dll",
-        "lib/netstandard2.0/Microsoft.Extensions.Logging.xml",
-        "lib/netstandard2.1/Microsoft.Extensions.Logging.dll",
-        "lib/netstandard2.1/Microsoft.Extensions.Logging.xml",
-        "microsoft.extensions.logging.11.0.0.nupkg.sha512",
-        "microsoft.extensions.logging.nuspec",
-        "useSharedDesignerContext.txt"
-      ]
-    },
     "Microsoft.IdentityModel.Abstractions/8.19.2": {
       "sha512": "HJbo/lnSfNHUfphPRT910poQc4T2/9+8svFLvzuaYHGAOJ2Tu+oEDqpX0BVP3BJ4OuUM1kylEKyaiX2fCAK3Cw==",
       "type": "package",
@@ -2029,23 +1889,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\angel\\.nuget\\packages\\": {},
+    "C:\\Users\\thoms\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\angel\\OneDrive\\Documents\\GitHub\\ProjectV_Group1_EmergencyServices\\tests\\MyApplication.Api.Tests\\MyApplication.Api.Tests.csproj",
+      "projectUniqueName": "C:\\Users\\thoms\\Desktop\\YEAR 3\\Project V Adv Software Dev\\New folder\\ProjectV_Group7_EmergencyServices\\tests\\MyApplication.Api.Tests\\MyApplication.Api.Tests.csproj",
       "projectName": "MyApplication.Api.Tests",
-      "projectPath": "C:\\Users\\angel\\OneDrive\\Documents\\GitHub\\ProjectV_Group1_EmergencyServices\\tests\\MyApplication.Api.Tests\\MyApplication.Api.Tests.csproj",
-      "packagesPath": "C:\\Users\\angel\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\angel\\OneDrive\\Documents\\GitHub\\ProjectV_Group1_EmergencyServices\\tests\\MyApplication.Api.Tests\\obj\\",
+      "projectPath": "C:\\Users\\thoms\\Desktop\\YEAR 3\\Project V Adv Software Dev\\New folder\\ProjectV_Group7_EmergencyServices\\tests\\MyApplication.Api.Tests\\MyApplication.Api.Tests.csproj",
+      "packagesPath": "C:\\Users\\thoms\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\thoms\\Desktop\\YEAR 3\\Project V Adv Software Dev\\New folder\\ProjectV_Group7_EmergencyServices\\tests\\MyApplication.Api.Tests\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\angel\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\thoms\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -2061,8 +1921,8 @@
           "framework": "net11.0",
           "targetAlias": "net11.0",
           "projectReferences": {
-            "C:\\Users\\angel\\OneDrive\\Documents\\GitHub\\ProjectV_Group1_EmergencyServices\\backend\\MyApplication.Api.csproj": {
-              "projectPath": "C:\\Users\\angel\\OneDrive\\Documents\\GitHub\\ProjectV_Group1_EmergencyServices\\backend\\MyApplication.Api.csproj"
+            "C:\\Users\\thoms\\Desktop\\YEAR 3\\Project V Adv Software Dev\\New folder\\ProjectV_Group7_EmergencyServices\\backend\\MyApplication.Api.csproj": {
+              "projectPath": "C:\\Users\\thoms\\Desktop\\YEAR 3\\Project V Adv Software Dev\\New folder\\ProjectV_Group7_EmergencyServices\\backend\\MyApplication.Api.csproj"
             }
           }
         }
@@ -2120,7 +1980,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\11.0.100-rc.3.26522.148/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\11.0.100/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.AspNetCore": "(,11.0.32767]",
           "Microsoft.AspNetCore.Antiforgery": "(,11.0.32767]",
@@ -2211,50 +2071,50 @@
           "Microsoft.AspNetCore.WebSockets": "(,11.0.32767]",
           "Microsoft.AspNetCore.WebUtilities": "(,11.0.32767]",
           "Microsoft.CSharp": "(,4.7.32767]",
-          "Microsoft.Extensions.Caching.Abstractions": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.Caching.Memory": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.Configuration": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.Configuration.Abstractions": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.Configuration.Binder": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.Configuration.CommandLine": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.Configuration.EnvironmentVariables": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.Configuration.FileExtensions": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.Configuration.Ini": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.Configuration.Json": "(,11.0.0-rc.3.26522.148]",
+          "Microsoft.Extensions.Caching.Abstractions": "(,11.0.32767]",
+          "Microsoft.Extensions.Caching.Memory": "(,11.0.32767]",
+          "Microsoft.Extensions.Configuration": "(,11.0.32767]",
+          "Microsoft.Extensions.Configuration.Abstractions": "(,11.0.32767]",
+          "Microsoft.Extensions.Configuration.Binder": "(,11.0.32767]",
+          "Microsoft.Extensions.Configuration.CommandLine": "(,11.0.32767]",
+          "Microsoft.Extensions.Configuration.EnvironmentVariables": "(,11.0.32767]",
+          "Microsoft.Extensions.Configuration.FileExtensions": "(,11.0.32767]",
+          "Microsoft.Extensions.Configuration.Ini": "(,11.0.32767]",
+          "Microsoft.Extensions.Configuration.Json": "(,11.0.32767]",
           "Microsoft.Extensions.Configuration.KeyPerFile": "(,11.0.32767]",
-          "Microsoft.Extensions.Configuration.UserSecrets": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.Configuration.Xml": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.DependencyInjection": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.Diagnostics": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.Diagnostics.Abstractions": "(,11.0.0-rc.3.26522.148]",
+          "Microsoft.Extensions.Configuration.UserSecrets": "(,11.0.32767]",
+          "Microsoft.Extensions.Configuration.Xml": "(,11.0.32767]",
+          "Microsoft.Extensions.DependencyInjection": "(,11.0.32767]",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "(,11.0.32767]",
+          "Microsoft.Extensions.Diagnostics": "(,11.0.32767]",
+          "Microsoft.Extensions.Diagnostics.Abstractions": "(,11.0.32767]",
           "Microsoft.Extensions.Diagnostics.HealthChecks": "(,11.0.32767]",
           "Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions": "(,11.0.32767]",
           "Microsoft.Extensions.Features": "(,11.0.32767]",
-          "Microsoft.Extensions.FileProviders.Abstractions": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.FileProviders.Composite": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.FileProviders.Physical": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.FileSystemGlobbing": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.Hosting": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.Hosting.Abstractions": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.Http": "(,11.0.0-rc.3.26522.148]",
+          "Microsoft.Extensions.FileProviders.Abstractions": "(,11.0.32767]",
+          "Microsoft.Extensions.FileProviders.Composite": "(,11.0.32767]",
+          "Microsoft.Extensions.FileProviders.Physical": "(,11.0.32767]",
+          "Microsoft.Extensions.FileSystemGlobbing": "(,11.0.32767]",
+          "Microsoft.Extensions.Hosting": "(,11.0.32767]",
+          "Microsoft.Extensions.Hosting.Abstractions": "(,11.0.32767]",
+          "Microsoft.Extensions.Http": "(,11.0.32767]",
           "Microsoft.Extensions.Identity.Core": "(,11.0.32767]",
           "Microsoft.Extensions.Identity.Stores": "(,11.0.32767]",
           "Microsoft.Extensions.Localization": "(,11.0.32767]",
           "Microsoft.Extensions.Localization.Abstractions": "(,11.0.32767]",
-          "Microsoft.Extensions.Logging": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.Logging.Abstractions": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.Logging.Configuration": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.Logging.Console": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.Logging.Debug": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.Logging.EventLog": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.Logging.EventSource": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.Logging.TraceSource": "(,11.0.0-rc.3.26522.148]",
+          "Microsoft.Extensions.Logging": "(,11.0.32767]",
+          "Microsoft.Extensions.Logging.Abstractions": "(,11.0.32767]",
+          "Microsoft.Extensions.Logging.Configuration": "(,11.0.32767]",
+          "Microsoft.Extensions.Logging.Console": "(,11.0.32767]",
+          "Microsoft.Extensions.Logging.Debug": "(,11.0.32767]",
+          "Microsoft.Extensions.Logging.EventLog": "(,11.0.32767]",
+          "Microsoft.Extensions.Logging.EventSource": "(,11.0.32767]",
+          "Microsoft.Extensions.Logging.TraceSource": "(,11.0.32767]",
           "Microsoft.Extensions.ObjectPool": "(,11.0.32767]",
-          "Microsoft.Extensions.Options": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.Options.ConfigurationExtensions": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.Options.DataAnnotations": "(,11.0.0-rc.3.26522.148]",
-          "Microsoft.Extensions.Primitives": "(,11.0.0-rc.3.26522.148]",
+          "Microsoft.Extensions.Options": "(,11.0.32767]",
+          "Microsoft.Extensions.Options.ConfigurationExtensions": "(,11.0.32767]",
+          "Microsoft.Extensions.Options.DataAnnotations": "(,11.0.32767]",
+          "Microsoft.Extensions.Primitives": "(,11.0.32767]",
           "Microsoft.Extensions.Validation": "(,11.0.32767]",
           "Microsoft.Extensions.WebEncoders": "(,11.0.32767]",
           "Microsoft.JSInterop": "(,11.0.32767]",
@@ -2431,7 +2291,7 @@
           "System.Buffers": "(,5.0.32767]",
           "System.Collections": "(,4.3.32767]",
           "System.Collections.Concurrent": "(,4.3.32767]",
-          "System.Collections.Immutable": "(,11.0.0-rc.3.26522.148]",
+          "System.Collections.Immutable": "(,11.0.32767]",
           "System.Collections.NonGeneric": "(,4.3.32767]",
           "System.Collections.Specialized": "(,4.3.32767]",
           "System.ComponentModel": "(,4.3.32767]",
@@ -2444,8 +2304,8 @@
           "System.Data.DataSetExtensions": "(,4.5.32767]",
           "System.Diagnostics.Contracts": "(,4.3.32767]",
           "System.Diagnostics.Debug": "(,4.3.32767]",
-          "System.Diagnostics.DiagnosticSource": "(,11.0.0-rc.3.26522.148]",
-          "System.Diagnostics.EventLog": "(,11.0.0-rc.3.26522.148]",
+          "System.Diagnostics.DiagnosticSource": "(,11.0.32767]",
+          "System.Diagnostics.EventLog": "(,11.0.32767]",
           "System.Diagnostics.FileVersionInfo": "(,4.3.32767]",
           "System.Diagnostics.Process": "(,4.3.32767]",
           "System.Diagnostics.StackTrace": "(,4.3.32767]",
@@ -2455,9 +2315,9 @@
           "System.Diagnostics.Tracing": "(,4.3.32767]",
           "System.Drawing.Primitives": "(,4.3.32767]",
           "System.Dynamic.Runtime": "(,4.3.32767]",
-          "System.Formats.Asn1": "(,11.0.0-rc.3.26522.148]",
-          "System.Formats.Cbor": "(,11.0.0-rc.3.26522.148]",
-          "System.Formats.Tar": "(,11.0.0-rc.3.26522.148]",
+          "System.Formats.Asn1": "(,11.0.32767]",
+          "System.Formats.Cbor": "(,11.0.32767]",
+          "System.Formats.Tar": "(,11.0.32767]",
           "System.Globalization": "(,4.3.32767]",
           "System.Globalization.Calendars": "(,4.3.32767]",
           "System.Globalization.Extensions": "(,4.3.32767]",
@@ -2471,25 +2331,25 @@
           "System.IO.FileSystem.Watcher": "(,4.3.32767]",
           "System.IO.IsolatedStorage": "(,4.3.32767]",
           "System.IO.MemoryMappedFiles": "(,4.3.32767]",
-          "System.IO.Pipelines": "(,11.0.0-rc.3.26522.148]",
+          "System.IO.Pipelines": "(,11.0.32767]",
           "System.IO.Pipes": "(,4.3.32767]",
           "System.IO.Pipes.AccessControl": "(,5.0.32767]",
           "System.IO.UnmanagedMemoryStream": "(,4.3.32767]",
           "System.Linq": "(,4.3.32767]",
-          "System.Linq.AsyncEnumerable": "(,11.0.0-rc.3.26522.148]",
+          "System.Linq.AsyncEnumerable": "(,11.0.32767]",
           "System.Linq.Expressions": "(,4.3.32767]",
           "System.Linq.Parallel": "(,4.3.32767]",
           "System.Linq.Queryable": "(,4.3.32767]",
           "System.Memory": "(,5.0.32767]",
           "System.Net.Http": "(,4.3.32767]",
-          "System.Net.Http.Json": "(,11.0.0-rc.3.26522.148]",
+          "System.Net.Http.Json": "(,11.0.32767]",
           "System.Net.NameResolution": "(,4.3.32767]",
           "System.Net.NetworkInformation": "(,4.3.32767]",
           "System.Net.Ping": "(,4.3.32767]",
           "System.Net.Primitives": "(,4.3.32767]",
           "System.Net.Requests": "(,4.3.32767]",
           "System.Net.Security": "(,4.3.32767]",
-          "System.Net.ServerSentEvents": "(,11.0.0-rc.3.26522.148]",
+          "System.Net.ServerSentEvents": "(,11.0.32767]",
           "System.Net.Sockets": "(,4.3.32767]",
           "System.Net.WebHeaderCollection": "(,4.3.32767]",
           "System.Net.WebSockets": "(,4.3.32767]",
@@ -2504,7 +2364,7 @@
           "System.Reflection.Emit.ILGeneration": "(,4.7.32767]",
           "System.Reflection.Emit.Lightweight": "(,4.7.32767]",
           "System.Reflection.Extensions": "(,4.3.32767]",
-          "System.Reflection.Metadata": "(,11.0.0-rc.3.26522.148]",
+          "System.Reflection.Metadata": "(,11.0.32767]",
           "System.Reflection.Primitives": "(,4.3.32767]",
           "System.Reflection.TypeExtensions": "(,4.7.32767]",
           "System.Resources.Reader": "(,4.3.32767]",
@@ -2530,26 +2390,26 @@
           "System.Security.Cryptography.Csp": "(,4.3.32767]",
           "System.Security.Cryptography.Encoding": "(,4.3.32767]",
           "System.Security.Cryptography.OpenSsl": "(,5.0.32767]",
-          "System.Security.Cryptography.Pkcs": "(,11.0.0-rc.3.26522.148]",
+          "System.Security.Cryptography.Pkcs": "(,11.0.32767]",
           "System.Security.Cryptography.Primitives": "(,4.3.32767]",
           "System.Security.Cryptography.X509Certificates": "(,4.3.32767]",
-          "System.Security.Cryptography.Xml": "(,11.0.0-rc.3.26522.148]",
+          "System.Security.Cryptography.Xml": "(,11.0.32767]",
           "System.Security.Principal": "(,4.3.32767]",
           "System.Security.Principal.Windows": "(,5.0.32767]",
           "System.Security.SecureString": "(,4.3.32767]",
           "System.Text.Encoding": "(,4.3.32767]",
-          "System.Text.Encoding.CodePages": "(,11.0.0-rc.3.26522.148]",
+          "System.Text.Encoding.CodePages": "(,11.0.32767]",
           "System.Text.Encoding.Extensions": "(,4.3.32767]",
-          "System.Text.Encodings.Web": "(,11.0.0-rc.3.26522.148]",
-          "System.Text.Json": "(,11.0.0-rc.3.26522.148]",
+          "System.Text.Encodings.Web": "(,11.0.32767]",
+          "System.Text.Json": "(,11.0.32767]",
           "System.Text.RegularExpressions": "(,4.3.32767]",
           "System.Threading": "(,4.3.32767]",
-          "System.Threading.AccessControl": "(,11.0.0-rc.3.26522.148]",
-          "System.Threading.Channels": "(,11.0.0-rc.3.26522.148]",
+          "System.Threading.AccessControl": "(,11.0.32767]",
+          "System.Threading.Channels": "(,11.0.32767]",
           "System.Threading.Overlapped": "(,4.3.32767]",
-          "System.Threading.RateLimiting": "(,11.0.0-rc.3.26522.148]",
+          "System.Threading.RateLimiting": "(,11.0.32767]",
           "System.Threading.Tasks": "(,4.3.32767]",
-          "System.Threading.Tasks.Dataflow": "(,11.0.0-rc.3.26522.148]",
+          "System.Threading.Tasks.Dataflow": "(,11.0.32767]",
           "System.Threading.Tasks.Extensions": "(,5.0.32767]",
           "System.Threading.Tasks.Parallel": "(,4.3.32767]",
           "System.Threading.Thread": "(,4.3.32767]",
