@@ -109,6 +109,29 @@ builder.Services.AddHttpClient<ITransitWarningClient, TransitWarningClient>(clie
 
 var app = builder.Build();
 
+// In Docker, create/update the database tables on startup (set Database__MigrateOnStartup=true).
+// Retries because SQL Server can take a while to be ready.
+if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<EmergencyDbContext>();
+    for (var attempt = 1; ; attempt++)
+    {
+        try
+        {
+            db.Database.Migrate();
+            break;
+        }
+        catch (Exception ex) when (attempt < 10)
+        {
+            app.Logger.LogWarning(ex, "Database not ready (attempt {Attempt}/10), retrying in 5s", attempt);
+            Thread.Sleep(5000);
+        }
+    }
+}
+
+// Configure the HTTP request pipeline.
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
