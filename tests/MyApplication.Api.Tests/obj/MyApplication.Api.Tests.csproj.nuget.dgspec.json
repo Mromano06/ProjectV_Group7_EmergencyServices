@@ -592,6 +592,10 @@
           "framework": "net11.0",
           "targetAlias": "net11.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Mvc.Testing": {
+              "target": "Package",
+              "version": "[11.0.0, )"
+            },
             "Microsoft.EntityFrameworkCore.InMemory": {
               "target": "Package",
               "version": "[11.*-*, )"

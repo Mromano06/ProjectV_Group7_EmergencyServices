@@ -7,6 +7,8 @@ namespace MyApplication.Api.Tests;
 /// Tests for the rules built into the WeatherWarning class itself
 /// (is it active, what's its status, ending it early).
 /// </summary>
+[Trait("Category", "Unit")]
+[Trait("Area", "Weather warnings")]
 public class WeatherWarningModelTests
 {
     private static readonly DateTime Now = new(2026, 11, 8, 12, 0, 0, DateTimeKind.Utc);
