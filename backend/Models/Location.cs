@@ -1,20 +1,16 @@
+namespace MyApplication.Api.Models;
 
-namespace EmergencyServices.Api.Models;
+// Matthew Romano - Nov 14th, 2026 - Location imp
 
+/// <summary>
+/// Owned EF Core value object.
+/// Coordinates are WGS84 decimal degrees.
+/// </summary>
 public class Location
 {
-    public string Street{get; set;} = string.Empty;
-    public string Address{get; set;} =string.Empty;
-    public string PostalCode{get;set;} = string.Empty;
+    public double Latitude { get; set; }
 
+    public double Longitude { get; set; }
 
-    ///<summary>
-    /// Calculates the distance in kilmoters to location
-    /// </summary>
-    
-    public double DistanceKmTo(Location other)
-    {
-        throw new NotImplementedException();
-
-    }
+    public string? Address { get; set; }
 }

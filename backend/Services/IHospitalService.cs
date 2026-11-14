@@ -2,7 +2,7 @@ using MyApplication.Api.Models;
 
 namespace MyApplication.Api.Services;
 
-// Matthew Romano - Nov 7th, 2026 - Hospital Opertions
+// Matthew Romano - Nov 7th, 2026 - Hospital Opertions Interface
 
 /// <summary>
 /// Provides read-only access to existing hospital information.

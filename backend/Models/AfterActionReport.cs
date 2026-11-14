@@ -1,14 +1,16 @@
-// Copyright 2026 Mroma
-// 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-// 
-//     https://www.apache.org/licenses/LICENSE-2.0
-// 
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+namespace MyApplication.Api.Models;
 
+// Matthew Romano - Nov 14th, 2026 - Incident Assignment Definitions
+// Holds all relevant fields for incident asssignment 
+public class AfterActionReport : AuditableEntity
+{
+    public Guid IncidentId { get; set; }
+    public Incident Incident { get; set; } = null!;
+    public string Outcome { get; set; } = string.Empty;
+    public int Injuries { get; set; }
+    public int Deaths { get; set; }
+    public double HydrantWaterLitres { get; set; }
+    public string? Notes { get; set; }
+    public Guid FiledBy { get; set; }
+    public DateTime FiledAt { get; set; }
+}
