@@ -16,7 +16,7 @@ partial class EmergencyDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261109170510_AddHospitals";
+    public override string LastMigrationId => "20261114180943_AddEmergencyOperations";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -26,6 +26,62 @@ partial class EmergencyDbContextModelSnapshot : ModelSnapshot
             .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
         SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+        modelBuilder.Entity("MyApplication.Api.Models.AfterActionReport", b =>
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<Guid>("CreatedBy")
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<int>("Deaths")
+                    .HasColumnType("int");
+
+                b.Property<DateTime>("FiledAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<Guid>("FiledBy")
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<double>("HydrantWaterLitres")
+                    .HasColumnType("float");
+
+                b.Property<Guid>("IncidentId")
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<int>("Injuries")
+                    .HasColumnType("int");
+
+                b.Property<string>("Notes")
+                    .HasMaxLength(4000)
+                    .HasColumnType("nvarchar(4000)");
+
+                b.Property<string>("Outcome")
+                    .IsRequired()
+                    .HasMaxLength(1000)
+                    .HasColumnType("nvarchar(1000)");
+
+                b.Property<DateTime?>("UpdatedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<Guid?>("UpdatedBy")
+                    .HasColumnType("uniqueidentifier");
+
+                b.HasKey("Id");
+
+                b.HasIndex("IncidentId")
+                    .IsUnique();
+
+                b.ToTable("AfterActionReports", t =>
+                    {
+                        t.HasCheckConstraint("CK_AAR_Nonnegative", "[Injuries] >= 0 AND [Deaths] >= 0 AND [HydrantWaterLitres] >= 0");
+                    });
+            });
 
         modelBuilder.Entity("MyApplication.Api.Models.Hospital", b =>
             {
@@ -72,6 +128,253 @@ partial class EmergencyDbContextModelSnapshot : ModelSnapshot
                     {
                         t.HasCheckConstraint("CK_Hospitals_Capacity", "[TotalRooms] >= 0 AND [OccupiedRooms] >= 0 AND [OccupiedRooms] <= [TotalRooms]");
                     });
+            });
+
+        modelBuilder.Entity("MyApplication.Api.Models.Incident", b =>
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<string>("CallerName")
+                    .HasMaxLength(150)
+                    .HasColumnType("nvarchar(150)");
+
+                b.Property<string>("CallerPhone")
+                    .HasMaxLength(50)
+                    .HasColumnType("nvarchar(50)");
+
+                b.Property<DateTime?>("ClosedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<Guid>("CreatedBy")
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<string>("Description")
+                    .HasMaxLength(4000)
+                    .HasColumnType("nvarchar(4000)");
+
+                b.Property<DateTime>("ReportedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<byte[]>("RowVersion")
+                    .IsConcurrencyToken()
+                    .IsRequired()
+                    .ValueGeneratedOnAddOrUpdate()
+                    .HasColumnType("rowversion");
+
+                b.Property<int>("Severity")
+                    .HasColumnType("int");
+
+                b.Property<Guid?>("SourceCallId")
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<string>("Status")
+                    .IsRequired()
+                    .HasMaxLength(30)
+                    .HasColumnType("nvarchar(30)");
+
+                b.Property<string>("Type")
+                    .IsRequired()
+                    .HasMaxLength(30)
+                    .HasColumnType("nvarchar(30)");
+
+                b.Property<DateTime?>("UpdatedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<Guid?>("UpdatedBy")
+                    .HasColumnType("uniqueidentifier");
+
+                b.HasKey("Id");
+
+                b.HasIndex("SourceCallId")
+                    .IsUnique()
+                    .HasFilter("[SourceCallId] IS NOT NULL");
+
+                b.HasIndex("Status", "Severity", "ReportedAt");
+
+                b.ToTable("Incidents", t =>
+                    {
+                        t.HasCheckConstraint("CK_Incidents_Severity", "[Severity] BETWEEN 1 AND 4");
+                    });
+            });
+
+        modelBuilder.Entity("MyApplication.Api.Models.IncidentAssignment", b =>
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<DateTime?>("ArrivedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<DateTime>("AssignedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<Guid>("CreatedBy")
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<Guid>("IncidentId")
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<DateTime?>("ReleasedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<Guid>("UnitId")
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<DateTime?>("UpdatedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<Guid?>("UpdatedBy")
+                    .HasColumnType("uniqueidentifier");
+
+                b.HasKey("Id");
+
+                b.HasIndex("IncidentId");
+
+                b.HasIndex("UnitId")
+                    .IsUnique()
+                    .HasFilter("[ReleasedAt] IS NULL");
+
+                b.ToTable("IncidentAssignments");
+            });
+
+        modelBuilder.Entity("MyApplication.Api.Models.IncidentStatusHistory", b =>
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<DateTime>("ChangedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<Guid>("ChangedBy")
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<Guid>("CreatedBy")
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<string>("FromStatus")
+                    .IsRequired()
+                    .HasMaxLength(30)
+                    .HasColumnType("nvarchar(30)");
+
+                b.Property<Guid>("IncidentId")
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<string>("ToStatus")
+                    .IsRequired()
+                    .HasMaxLength(30)
+                    .HasColumnType("nvarchar(30)");
+
+                b.Property<DateTime?>("UpdatedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<Guid?>("UpdatedBy")
+                    .HasColumnType("uniqueidentifier");
+
+                b.HasKey("Id");
+
+                b.HasIndex("IncidentId", "ChangedAt");
+
+                b.ToTable("IncidentStatusHistories");
+            });
+
+        modelBuilder.Entity("MyApplication.Api.Models.Station", b =>
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<Guid>("CreatedBy")
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("nvarchar(200)");
+
+                b.Property<string>("Type")
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .HasColumnType("nvarchar(20)");
+
+                b.Property<DateTime?>("UpdatedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<Guid?>("UpdatedBy")
+                    .HasColumnType("uniqueidentifier");
+
+                b.HasKey("Id");
+
+                b.ToTable("Stations");
+            });
+
+        modelBuilder.Entity("MyApplication.Api.Models.Unit", b =>
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<string>("CallSign")
+                    .IsRequired()
+                    .HasMaxLength(40)
+                    .HasColumnType("nvarchar(40)");
+
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<Guid>("CreatedBy")
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<byte[]>("RowVersion")
+                    .IsConcurrencyToken()
+                    .IsRequired()
+                    .ValueGeneratedOnAddOrUpdate()
+                    .HasColumnType("rowversion");
+
+                b.Property<Guid>("StationId")
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<string>("Status")
+                    .IsRequired()
+                    .HasMaxLength(30)
+                    .HasColumnType("nvarchar(30)");
+
+                b.Property<string>("Type")
+                    .IsRequired()
+                    .HasMaxLength(30)
+                    .HasColumnType("nvarchar(30)");
+
+                b.Property<DateTime?>("UpdatedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<Guid?>("UpdatedBy")
+                    .HasColumnType("uniqueidentifier");
+
+                b.HasKey("Id");
+
+                b.HasIndex("CallSign")
+                    .IsUnique();
+
+                b.HasIndex("StationId");
+
+                b.HasIndex("Status", "Type");
+
+                b.ToTable("Units");
             });
 
         modelBuilder.Entity("MyApplication.Api.Models.WarningIncidentLink", b =>
@@ -169,6 +472,122 @@ partial class EmergencyDbContextModelSnapshot : ModelSnapshot
                 b.ToTable("WeatherWarnings");
             });
 
+        modelBuilder.Entity("MyApplication.Api.Models.AfterActionReport", b =>
+            {
+                b.HasOne("MyApplication.Api.Models.Incident", "Incident")
+                    .WithOne("Report")
+                    .HasForeignKey("MyApplication.Api.Models.AfterActionReport", "IncidentId")
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
+
+                b.Navigation("Incident");
+            });
+
+        modelBuilder.Entity("MyApplication.Api.Models.Incident", b =>
+            {
+                b.OwnsOne("MyApplication.Api.Models.Location", "Location", b1 =>
+                    {
+                        b1.Property<Guid>("IncidentId")
+                            .HasColumnType("uniqueidentifier");
+
+                        b1.Property<string>("Address")
+                            .HasMaxLength(500)
+                            .HasColumnType("nvarchar(500)")
+                            .HasColumnName("Address");
+
+                        b1.Property<double>("Latitude")
+                            .HasColumnType("float")
+                            .HasColumnName("Latitude");
+
+                        b1.Property<double>("Longitude")
+                            .HasColumnType("float")
+                            .HasColumnName("Longitude");
+
+                        b1.HasKey("IncidentId");
+
+                        b1.ToTable("Incidents");
+
+                        b1.WithOwner()
+                            .HasForeignKey("IncidentId");
+                    });
+
+                b.Navigation("Location")
+                    .IsRequired();
+            });
+
+        modelBuilder.Entity("MyApplication.Api.Models.IncidentAssignment", b =>
+            {
+                b.HasOne("MyApplication.Api.Models.Incident", "Incident")
+                    .WithMany("Assignments")
+                    .HasForeignKey("IncidentId")
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
+
+                b.HasOne("MyApplication.Api.Models.Unit", "Unit")
+                    .WithMany()
+                    .HasForeignKey("UnitId")
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
+
+                b.Navigation("Incident");
+
+                b.Navigation("Unit");
+            });
+
+        modelBuilder.Entity("MyApplication.Api.Models.IncidentStatusHistory", b =>
+            {
+                b.HasOne("MyApplication.Api.Models.Incident", "Incident")
+                    .WithMany("StatusHistory")
+                    .HasForeignKey("IncidentId")
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
+
+                b.Navigation("Incident");
+            });
+
+        modelBuilder.Entity("MyApplication.Api.Models.Station", b =>
+            {
+                b.OwnsOne("MyApplication.Api.Models.Location", "Location", b1 =>
+                    {
+                        b1.Property<Guid>("StationId")
+                            .HasColumnType("uniqueidentifier");
+
+                        b1.Property<string>("Address")
+                            .HasMaxLength(500)
+                            .HasColumnType("nvarchar(500)")
+                            .HasColumnName("Address");
+
+                        b1.Property<double>("Latitude")
+                            .HasColumnType("float")
+                            .HasColumnName("Latitude");
+
+                        b1.Property<double>("Longitude")
+                            .HasColumnType("float")
+                            .HasColumnName("Longitude");
+
+                        b1.HasKey("StationId");
+
+                        b1.ToTable("Stations");
+
+                        b1.WithOwner()
+                            .HasForeignKey("StationId");
+                    });
+
+                b.Navigation("Location")
+                    .IsRequired();
+            });
+
+        modelBuilder.Entity("MyApplication.Api.Models.Unit", b =>
+            {
+                b.HasOne("MyApplication.Api.Models.Station", "Station")
+                    .WithMany("Units")
+                    .HasForeignKey("StationId")
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
+
+                b.Navigation("Station");
+            });
+
         modelBuilder.Entity("MyApplication.Api.Models.WarningIncidentLink", b =>
             {
                 b.HasOne("MyApplication.Api.Models.WeatherWarning", "WeatherWarning")
@@ -178,6 +597,20 @@ partial class EmergencyDbContextModelSnapshot : ModelSnapshot
                     .IsRequired();
 
                 b.Navigation("WeatherWarning");
+            });
+
+        modelBuilder.Entity("MyApplication.Api.Models.Incident", b =>
+            {
+                b.Navigation("Assignments");
+
+                b.Navigation("Report");
+
+                b.Navigation("StatusHistory");
+            });
+
+        modelBuilder.Entity("MyApplication.Api.Models.Station", b =>
+            {
+                b.Navigation("Units");
             });
 
         modelBuilder.Entity("MyApplication.Api.Models.WeatherWarning", b =>
