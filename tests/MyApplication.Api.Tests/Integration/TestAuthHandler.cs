@@ -18,16 +18,19 @@ public static class Roles
 /// <summary>
 /// A fake login used only in tests, so tests don't need real JWT tokens or signing keys.
 ///
-/// The test sends a header like  X-Test-Role: emergency:Admin  and this handler treats the
-/// request as coming from a logged-in user with that role. No header = not logged in (-> 401).
-/// The API's own [Authorize(Roles = ...)] rules are still applied, so 401/403 behaviour is real.
+///   X-Test-Role: emergency:Admin          -> a logged-in user with that role (comma-separate for several)
+///   X-Test-Claims: service=security       -> extra claims, e.g. another city service's account
+///   neither header                        -> not logged in (-> 401)
+///
+/// The API's own [Authorize] rules and policies are still applied, so 401/403 behaviour is real.
 /// </summary>
 public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
     public const string SchemeName = "Test";
     public const string RoleHeader = "X-Test-Role";
+    public const string ClaimsHeader = "X-Test-Claims";
 
-    /// <summary>The user ID every test request runs as (shows up in CreatedBy/UpdatedBy).</summary>
+    /// <summary>The user ID every test request runs as (shows up in CreatedBy/UpdatedBy/ChangedBy).</summary>
     public static readonly Guid UserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
     public TestAuthHandler(
@@ -40,7 +43,10 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        if (!Request.Headers.TryGetValue(RoleHeader, out var header) || string.IsNullOrWhiteSpace(header))
+        var roles = Request.Headers[RoleHeader].ToString();
+        var extraClaims = Request.Headers[ClaimsHeader].ToString();
+
+        if (string.IsNullOrWhiteSpace(roles) && string.IsNullOrWhiteSpace(extraClaims))
         {
             return Task.FromResult(AuthenticateResult.NoResult()); // not logged in
         }
@@ -51,10 +57,19 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
             new(ClaimTypes.Name, "integration-test-user")
         };
 
-        // Allow several roles: "emergency:Admin,emergency:Dispatcher"
-        foreach (var role in header.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        foreach (var role in roles.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
             claims.Add(new Claim(ClaimTypes.Role, role));
+        }
+
+        // "type=value;type2=value2"
+        foreach (var pair in extraClaims.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var parts = pair.Split('=', 2, StringSplitOptions.TrimEntries);
+            if (parts.Length == 2)
+            {
+                claims.Add(new Claim(parts[0], parts[1]));
+            }
         }
 
         var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, SchemeName));

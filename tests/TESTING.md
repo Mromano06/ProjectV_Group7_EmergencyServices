@@ -7,7 +7,7 @@ dotnet test tests/MyApplication.Api.Tests
 ```
 
 Run it from the top folder of the repo. **No Docker, SQL Server or tokens needed** – the tests start
-the API in memory with a fake database and a fake login.
+the API in memory with an in-memory SQL database (SQLite), a fake login, and fakes for other teams' services.
 
 ## What's in here
 
@@ -15,12 +15,64 @@ the API in memory with a fake database and a fake login.
 tests/MyApplication.Api.Tests/
   Unit/          Tests one class at a time (rules inside a service or model)
   Integration/   Starts the real API and calls endpoints over HTTP, as a real user would
-    EmergencyApiFactory.cs     Starts the API for tests (fake DB, fake login, fake Transit)
-    TestAuthHandler.cs         Fake login – pick a role, no JWT needed
-    EndpointSecurityTests.cs   WHOLE-BACKEND checks (see below)
-    WeatherWarningsApiTests.cs Warnings feature
-  Fakes/         Pretend versions of other city services
+    EmergencyApiFactory.cs        Starts the API for tests (SQLite DB, fake login, fakes for other services)
+    SqliteTestDbContext.cs        The team's real database model, tweaked only so it runs on SQLite
+    TestAuthHandler.cs            Fake login – pick a role (or a service account), no JWT needed
+    TestData.cs                   Shortcuts: create stations/units/incidents, check responses
+    EndpointSecurityTests.cs      WHOLE-BACKEND checks (see below)
+    IncidentsApiTests.cs          Incidents: create, roles, status rules, full lifecycle, UTC dates
+    DispatchApiTests.cs           Assigning/releasing units, suggested units
+    UnitsAndStationsApiTests.cs   Units and stations reference data
+    HospitalsApiTests.cs          Hospitals list/detail/summary
+    StatsAndExportApiTests.cs     Dashboard stats and CSV export
+    ExternalServicesApiTests.cs   Budget, HR and Maintenance road closures (through the fake gateway)
+    WeatherWarningsApiTests.cs    Weather & public warnings
+  Fakes/
+    FakeGateway.cs                Pretend Budget/HR/Maintenance – each test sets what they reply
+    FakeTransitClient.cs          Pretend Public Transport
+    FakeServiceTokenProvider.cs   Pretend service-account token
 ```
+
+### Testing code that calls another team's service
+
+Budget, HR and Maintenance calls go to `FakeGateway` instead of the network. Tell it what to reply,
+call our endpoint, then check what we sent:
+
+```csharp
+_factory.Gateway.Respond(HttpMethod.Get, "/api/budget/v1/allocations/emergency",
+    HttpStatusCode.OK, new { allocated = 500000 });
+
+var response = await _viewer.GetAsync("/api/emergency/v1/budget");
+
+var sent = _factory.Gateway.Requests.Last();   // path, auth header and body we sent
+```
+
+Anything not set up replies **503**, like a service that's down – so you can test failure handling too.
+If you add a new client for another service, point it at the gateway in `EmergencyApiFactory` the same
+way `BudgetFinanceClient` is.
+
+### Setting up data
+
+Use the shortcuts in `TestData.cs` – they go through the real API:
+
+```csharp
+var station  = await _admin.CreateStationAsync();
+var unit     = await _admin.CreateUnitAsync(station.Id, "Ambulance");
+var incident = await _dispatcher.CreateIncidentAsync(type: "Medical");
+await _dispatcher.ResolveAsync(incident.Id, unit.Id);     // assign -> EnRoute -> OnScene -> Resolved
+```
+
+For data the API has no endpoint for yet (e.g. hospitals), put it straight in the database:
+`await _factory.SeedAsync(db => db.Hospitals.Add(new Hospital { ... }));`
+
+`response.ExpectAsync<T>(HttpStatusCode.OK)` checks the status code and shows the API's actual reply
+in the failure message if it's wrong; `ExpectErrorAsync` also checks the `{ error, message, traceId }` shape.
+
+### What SQLite can't test
+
+SQLite runs one request at a time, so a true "two dispatchers at the same instant" race (ES-NFR-006)
+can't be reproduced here. The tests check the rule (a busy unit can't be assigned again, and a failed
+multi-unit assignment rolls back); the race itself is protected by SQL Server's filtered unique index.
 
 ### Whole-backend checks (cover everyone's code automatically)
 
@@ -103,7 +155,7 @@ public class HospitalsApiTests : IClassFixture<EmergencyApiFactory>
    ```
    dotnet test tests/MyApplication.Api.Tests --logger "trx;LogFileName=sprint-N.trx" --results-directory TestResults
    ```
-   (Replace N with the sprint number.) This also prints a summary like `total: 49, failed: 0`.
+   (Replace N with the sprint number.) This also prints a summary like `total: 119, failed: 0`.
 2. Screenshot the summary and put it in the **Software Release Note**, with the number of tests,
    passed/failed, and any known failures with their work item number.
 3. Update the **Test results** column in the SRS Test Cases sheet.
