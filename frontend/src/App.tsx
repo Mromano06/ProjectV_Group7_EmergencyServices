@@ -1,3 +1,11 @@
+import { useAuth } from './auth/AuthContext';
+import AvailableUnits from './components/AvailableUnitPanel';
+import DispatchTracker from './components/DispatchTracker';
+import NotificationsPanel from './components/NotificationPanel';
+import LogPanel from './components/LogPanel';
+import type { Role } from './types/models';
+
+const ROLES: Role[] = ['Dispatcher', 'Admin', 'Viewer'];
 import { useEffect, useState } from 'react'
 import './App.css'
 import { getApiData } from './api/apiClient'

@@ -1,4 +1,14 @@
-import type { EmergencyNotice, IncidentType, Severity, Unit, UnitType } from '../types/models';
+import type {
+  EmergencyNotice,
+  HospitalTally, 
+  IncidentType, 
+  Severity,
+  Unit, 
+  UnitType,
+  WarningSeverity, 
+  WeatherWarning,
+} from '../types/models';
+
 
 function unit(id: number, callSign: string, type: UnitType, homeStation: string): Unit {
   return { id, callSign, type, homeStation, status: 'Available', active: true };
@@ -37,4 +47,28 @@ const pick = <T,>(list: T[]): T => list[Math.floor(Math.random() * list.length)]
 export function makeNotice(id: number): EmergencyNotice {
   const t = pick(TEMPLATES);
   return { id, ...t, locationLabel: pick(LOCATIONS), createdAt: Date.now() };
+}
+
+export const INITIAL_HOSPITALS: HospitalTally[] = [
+  { id: 1, name: 'General Hospital', erStatus: 'Open', deaths: 0 },
+  { id: 2, name: "St. Mary's", erStatus: 'Open', deaths: 0 },
+  { id: 3, name: 'Riverside Medical', erStatus: 'Diverting', deaths: 0 },
+];
+
+const WARNING_TYPES = ['Snowfall', 'Freezing Rain', 'Thunderstorm', 'Flash Flood', 'Extreme Cold'];
+const WARNING_SEVERITIES: WarningSeverity[] = ['Statement', 'Advisory', 'Watch', 'Warning'];
+const WARNING_AREAS = ['City-wide', 'North end', 'Harbour district', 'East side', 'Downtown'];
+
+export function makeWarning(n: number): WeatherWarning {
+  const now = Date.now();
+  return {
+    id: n,
+    type: pick(WARNING_TYPES),
+    severity: pick(WARNING_SEVERITIES),
+    area: pick(WARNING_AREAS),
+    startsAt: new Date(now).toISOString(),
+    endsAt: new Date(now + 2 * 60 * 60 * 1000).toISOString(),
+    status: 'Active',
+    affectsTransit: Math.random() < 0.5,
+  };
 }

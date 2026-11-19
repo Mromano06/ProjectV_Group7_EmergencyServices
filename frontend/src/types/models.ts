@@ -13,10 +13,57 @@ export type UnitType = (typeof UNIT_TYPES)[number];
 
 export type UnitStatus = 'Available' | 'Dispatched' | 'On Scene' | 'Out of Service';
 export type ErStatus = 'Open' | 'Diverting' | 'Closed';
-export type Role = 'Dispatcher' | 'Responder' | 'Admin' | 'Viewer';
+export type Role = 'Dispatcher' | 'Admin' | 'Viewer';
 
 export type DispatchPhase = 'outbound' | 'onScene' | 'returning';
 
+export type WarningSeverity = 'Statement' | 'Advisory' | 'Watch' | 'Warning';
+
+export interface WeatherWarning {
+  id: number;
+  type: string;
+  severity: WarningSeverity;
+  area: string;
+  description?: string;
+  startsAt: string;
+  endsAt: string;
+  status: 'Scheduled' | 'Active' | 'Ended';
+  affectsTransit: boolean;
+}
+
+export type LogLevel = 'info' | 'success' | 'warning' | 'danger';
+export type LogCategory = 'call' | 'unit' | 'weather' | 'system';
+
+export interface LogEntry {
+  id: number;
+  time: number;
+  level: LogLevel;
+  category: LogCategory;
+  message: string;
+  details?: string[];
+}
+
+export interface HospitalTally {
+  id: number;
+  name: string;
+  erStatus: ErStatus;
+  deaths: number;
+}
+
+export interface CallRecord {
+  noticeId: number;
+  title: string;
+  incidentType: IncidentType;
+  severity: Severity;
+  locationLabel: string;
+  requiredUnitType: UnitType;
+  responders: string[];
+  responseMs: number; // call reported and correct unit on scene
+  deaths: number;
+  hospitalName: string | null;
+  successful: boolean;
+  completedAt: number;
+}
 
 export interface Location {
   address?: string;
@@ -45,7 +92,6 @@ export interface Incident {
   location: Location;
   description: string;
   reportedAt: string;
-  // Optional: the server omits these for Viewers (ES-NFR-007)
   callerName?: string;
   callerPhone?: string;
   history?: StatusHistoryEntry[];
@@ -76,15 +122,6 @@ export interface Hospital {
   erStatus: ErStatus;
   availableBeds: number;
   updatedAt: string;
-}
-
-export interface WeatherWarning {
-  id: number;
-  type: string;
-  severity: string;
-  area: string;
-  start: string;
-  end: string;
 }
 
 export interface ActiveDispatch {

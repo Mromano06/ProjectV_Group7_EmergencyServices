@@ -1,5 +1,5 @@
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
 
 export default defineConfig({
   plugins: [react()],
@@ -11,5 +11,12 @@ export default defineConfig({
         secure: false,
       },
     },
+  },
+  test: {
+    environment: 'jsdom',
+    setupFiles: './src/tests/Setup.ts',
+    env: { VITE_USE_MOCK: 'true' }, // keeps the weather poller off during tests
+    restoreMocks: true,
+    unstubGlobals: true,
   },
 })
