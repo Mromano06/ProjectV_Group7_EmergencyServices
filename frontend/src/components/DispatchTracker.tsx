@@ -4,7 +4,7 @@ import { useDispatchStore } from '../state/DispatchContext';
 import type { ActiveDispatch, DispatchPhase } from '../types/models';
 import { getProgress } from '../utils/DispatchMath';
 import UnitBadge from '../components/UnitBadge';
-import '../styles/panels.css';
+import '../styles/Panels.css';
 
 const PHASE_LABEL: Record<DispatchPhase, string> = {
   outbound: 'En route',

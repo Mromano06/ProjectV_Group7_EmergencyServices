@@ -11,6 +11,8 @@ import { buildCompletionLog, rollDeaths } from '../utils/CallOutcome';
 import { estimateTravelMs, getProgress } from '../utils/DispatchMath';
 import { SEVERITY_LABEL, formatDuration, parseUtc } from '../utils/Labels';
 
+import {getApiData} from '../api/apiClient';
+
 type NewLog = Omit<LogEntry, 'id'>;
 const MAX_LOGS = 300;
 
@@ -357,6 +359,33 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     const timer = setInterval(() => dispatch({ type: 'TICK', now: Date.now() }), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+  if (import.meta.env.VITE_USE_MOCK === 'true') return;
+
+  const pollWarnings = async () => {
+    try {
+      const warnings = await getApiData<WeatherWarning[]>(
+        '/api/emergency/v1/weather-warnings?active=true',
+      );
+
+      warnings.forEach((warning) => {
+        dispatch({
+          type: 'RECEIVE_WARNING',
+          warning,
+          now: Date.now(),
+        });
+      });
+    } catch (error) {
+      console.error('Unable to load weather warnings:', error);
+    }
+  };
+
+  pollWarnings();
+  const timer = setInterval(pollWarnings, 30_000);
+
+  return () => clearInterval(timer);
+}, []);
 
   const selectNotice = (id: number | null) => dispatch({ type: 'SELECT_NOTICE', id });
   const selectUnit = (id: number | null) => dispatch({ type: 'SELECT_UNIT', id });
