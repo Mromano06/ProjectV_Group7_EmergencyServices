@@ -13,19 +13,19 @@ export type UnitType = (typeof UNIT_TYPES)[number];
 
 export type UnitStatus = 'Available' | 'Dispatched' | 'On Scene' | 'Out of Service';
 export type ErStatus = 'Open' | 'Diverting' | 'Closed';
-export type Role = 'Dispatcher' | 'Responder' | 'Admin' | 'Viewer';
+export type Role = 'Dispatcher' | 'Admin' | 'Viewer';
 
 export type DispatchPhase = 'outbound' | 'onScene' | 'returning';
 
 export type WarningSeverity = 'Statement' | 'Advisory' | 'Watch' | 'Warning';
 
 export interface WeatherWarning {
-  id: string;                      // GUID from the server
+  id: number;
   type: string;
   severity: WarningSeverity;
   area: string;
   description?: string;
-  startsAt: string;                // UTC ISO string
+  startsAt: string;
   endsAt: string;
   status: 'Scheduled' | 'Active' | 'Ended';
   affectsTransit: boolean;
@@ -36,14 +36,13 @@ export type LogCategory = 'call' | 'unit' | 'weather' | 'system';
 
 export interface LogEntry {
   id: number;
-  time: number;                    // ms since epoch
+  time: number;
   level: LogLevel;
   category: LogCategory;
   message: string;
   details?: string[];
 }
 
-// Client-side tally only; the server has no per-hospital death count
 export interface HospitalTally {
   id: number;
   name: string;
@@ -51,7 +50,6 @@ export interface HospitalTally {
   deaths: number;
 }
 
-// One finished call, like a mini after-action report
 export interface CallRecord {
   noticeId: number;
   title: string;
@@ -60,7 +58,7 @@ export interface CallRecord {
   locationLabel: string;
   requiredUnitType: UnitType;
   responders: string[];
-  responseMs: number;              // call reported -> correct unit on scene
+  responseMs: number; // call reported and correct unit on scene
   deaths: number;
   hospitalName: string | null;
   successful: boolean;
@@ -94,7 +92,6 @@ export interface Incident {
   location: Location;
   description: string;
   reportedAt: string;
-  // Optional: the server omits these for Viewers (ES-NFR-007)
   callerName?: string;
   callerPhone?: string;
   history?: StatusHistoryEntry[];
@@ -125,15 +122,6 @@ export interface Hospital {
   erStatus: ErStatus;
   availableBeds: number;
   updatedAt: string;
-}
-
-export interface WeatherWarning {
-  id: number;
-  type: string;
-  severity: string;
-  area: string;
-  start: string;
-  end: string;
 }
 
 export interface ActiveDispatch {

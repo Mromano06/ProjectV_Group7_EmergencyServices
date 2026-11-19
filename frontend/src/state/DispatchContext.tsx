@@ -1,5 +1,5 @@
 import {
-  createContext, useCallback, useContext, useEffect, useReducer, useRef, useState,
+  createContext, useContext, useEffect, useReducer, useRef,
   type ReactNode,
 } from 'react';
 import { INITIAL_HOSPITALS, INITIAL_UNITS, makeNotice, makeWarning } from '../api/mockData';
@@ -7,7 +7,7 @@ import type {
   ActiveDispatch, CallRecord, EmergencyNotice, HospitalTally, LogEntry, Unit, UnitStatus,
   WeatherWarning,
 } from '../types/models';
-import { buildCompletionLog, rollDeaths, seededRandom } from '../utils/CallOutcome';
+import { buildCompletionLog, rollDeaths } from '../utils/CallOutcome';
 import { estimateTravelMs, getProgress } from '../utils/DispatchMath';
 import { SEVERITY_LABEL, formatDuration, parseUtc } from '../utils/Labels';
 
@@ -15,6 +15,7 @@ type NewLog = Omit<LogEntry, 'id'>;
 const MAX_LOGS = 300;
 
 interface State {
+  now: number;
   units: Unit[];
   notices: EmergencyNotice[];
   dispatches: ActiveDispatch[];
@@ -24,16 +25,16 @@ interface State {
   logs: LogEntry[];                       // newest first
   records: CallRecord[];                  // finished calls
   responders: Record<number, string[]>;   // call sign list per call
-  seenWarningIds: string[];
+  seenWarningIds: number[];
   nextLogId: number;
 }
 
 type Action =
-  | { type: 'TICK'; now: number; seed: number }
+  | { type: 'TICK'; now: number }
   | { type: 'ADD_NOTICE'; notice: EmergencyNotice }
   | { type: 'SELECT_NOTICE'; id: number | null }
   | { type: 'SELECT_UNIT'; id: number | null }
-  | { type: 'SEND'; now: number; dispatchId: number; dwellMs: number }
+  | { type: 'SEND'; now: number; dispatchId: number; travelMs: number; dwellMs: number }
   | { type: 'CANCEL'; id: number; now: number }
   | { type: 'RECEIVE_WARNING'; warning: WeatherWarning; now: number }
   | { type: 'CLEAR_LOG' };
@@ -41,9 +42,8 @@ type Action =
 // Adds entries (given oldest -> newest) to the top of the log
 function withLogs(state: State, entries: NewLog[]): State {
   if (entries.length === 0) return state;
-  const sorted = [...entries].sort((a, b) => a.time - b.time);
   let id = state.nextLogId;
-  const added: LogEntry[] = sorted.map((e) => ({ ...e, id: id++ }));
+  const added: LogEntry[] = entries.map((e) => ({ ...e, id: id++ }));
   return {
     ...state,
     nextLogId: id,
@@ -84,17 +84,13 @@ function advance(d: ActiveDispatch, now: number) {
 
 // A unit is Available only when it has no dispatch
 function syncUnits(units: Unit[], dispatches: ActiveDispatch[]): Unit[] {
-  let changed = false;
-  const next = units.map((u) => {
+  return units.map((u) => {
     const d = dispatches.find((x) => x.unitId === u.id);
     const status: UnitStatus = d
       ? d.phase === 'onScene' ? 'On Scene' : 'Dispatched'
       : u.status === 'Out of Service' ? 'Out of Service' : 'Available';
-    if (status === u.status) return u;
-    changed = true;
-    return { ...u, status };
+    return status === u.status ? u : { ...u, status };
   });
-  return changed ? next : units;
 }
 
 function reducer(state: State, action: Action): State {
@@ -120,7 +116,7 @@ function reducer(state: State, action: Action): State {
       const notice = state.notices.find((n) => n.id === state.selectedNoticeId);
       const unit = state.units.find((u) => u.id === state.selectedUnitId);
       if (!notice || !unit || !unit.active || unit.status !== 'Available') return state;
-      const travelMs = estimateTravelMs(unit.homeStation, notice.locationLabel);
+      const { travelMs } = action;
       const dispatch: ActiveDispatch = {
         id: action.dispatchId,
         unitId: unit.id,
@@ -214,7 +210,7 @@ function reducer(state: State, action: Action): State {
           const notice = d.noticeId === null ? undefined : notices.find((n) => n.id === d.noticeId);
           if (notice && notice.requiredUnitType === d.unitType) {
             // The correct unit type has arrived: the call is complete
-            const rand = seededRandom((action.seed ^ Math.imul(notice.id, 2654435761)) >>> 0);
+            const rand = Math.random;
             const responseMs = arrivedAt - notice.createdAt;
             const deaths = rollDeaths(notice.severity, responseMs, rand);
 
@@ -264,10 +260,12 @@ function reducer(state: State, action: Action): State {
         }
       }
 
-      if (!changed) return state;
+      // Nothing moved: only the clock changes
+      if (!changed) return { ...state, now: action.now };
       return withLogs(
         {
           ...state,
+          now: action.now,
           dispatches,
           notices,
           hospitals,
@@ -306,6 +304,7 @@ function createInitialState(): State {
   const notices = [makeNotice(1), makeNotice(2)];
   return withLogs(
     {
+      now: Date.now(),
       units: INITIAL_UNITS,
       notices,
       dispatches: [],
@@ -349,60 +348,46 @@ const DispatchContext = createContext<DispatchStore | null>(null);
 
 export function DispatchProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, null, createInitialState);
-  const [now, setNow] = useState(() => Date.now());
   const nextNoticeId = useRef(3);
   const nextDispatchId = useRef(1);
   const nextWarningId = useRef(1);
 
   // One clock for everything: updates timers and advances phases
   useEffect(() => {
-    const timer = setInterval(() => {
-      const t = Date.now();
-      setNow(t);
-      dispatch({ type: 'TICK', now: t, seed: Math.floor(Math.random() * 4294967296) });
-    }, 1000);
+    const timer = setInterval(() => dispatch({ type: 'TICK', now: Date.now() }), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const selectNotice = useCallback((id: number | null) => dispatch({ type: 'SELECT_NOTICE', id }), []);
-  const selectUnit = useCallback((id: number | null) => dispatch({ type: 'SELECT_UNIT', id }), []);
+  const selectNotice = (id: number | null) => dispatch({ type: 'SELECT_NOTICE', id });
+  const selectUnit = (id: number | null) => dispatch({ type: 'SELECT_UNIT', id });
 
-  const sendSelected = useCallback(() => {
+  // Randomness is picked here, not in the reducer, so the reducer stays pure
+  const sendSelected = () =>
     dispatch({
       type: 'SEND',
       now: Date.now(),
       dispatchId: nextDispatchId.current++,
+      travelMs: estimateTravelMs(),
       dwellMs: (8 + Math.floor(Math.random() * 13)) * 1000, // random 8-20 s on scene
     });
-  }, []);
 
-  const cancelDispatch = useCallback(
-    (id: number) => dispatch({ type: 'CANCEL', id, now: Date.now() }),
-    [],
-  );
+  const cancelDispatch = (id: number) => dispatch({ type: 'CANCEL', id, now: Date.now() });
 
-  const addTestNotice = useCallback(
-    () => dispatch({ type: 'ADD_NOTICE', notice: makeNotice(nextNoticeId.current++) }),
-    [],
-  );
+  const addTestNotice = () =>
+    dispatch({ type: 'ADD_NOTICE', notice: makeNotice(nextNoticeId.current++) });
 
   // Later, a polling hook will call this for each warning from the server
-  const receiveWarning = useCallback(
-    (warning: WeatherWarning) => dispatch({ type: 'RECEIVE_WARNING', warning, now: Date.now() }),
-    [],
-  );
+  const receiveWarning = (warning: WeatherWarning) =>
+    dispatch({ type: 'RECEIVE_WARNING', warning, now: Date.now() });
 
-  const addTestWarning = useCallback(
-    () => receiveWarning(makeWarning(nextWarningId.current++)),
-    [receiveWarning],
-  );
+  const addTestWarning = () => receiveWarning(makeWarning(nextWarningId.current++));
 
-  const clearLog = useCallback(() => dispatch({ type: 'CLEAR_LOG' }), []);
+  const clearLog = () => dispatch({ type: 'CLEAR_LOG' });
 
   return (
     <DispatchContext.Provider
       value={{
-        now,
+        now: state.now,
         units: state.units,
         notices: state.notices,
         dispatches: state.dispatches,

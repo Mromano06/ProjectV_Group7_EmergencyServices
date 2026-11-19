@@ -62,7 +62,7 @@ const WARNING_AREAS = ['City-wide', 'North end', 'Harbour district', 'East side'
 export function makeWarning(n: number): WeatherWarning {
   const now = Date.now();
   return {
-    id: `mock-warning-${n}`,
+    id: n,
     type: pick(WARNING_TYPES),
     severity: pick(WARNING_SEVERITIES),
     area: pick(WARNING_AREAS),

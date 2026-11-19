@@ -1,10 +1,8 @@
 import type { ActiveDispatch } from '../types/models';
 
-// Mock travel time (30-90 s) from a station to a place. The server's ETA replaces this.
-export function estimateTravelMs(homeStation: string, destination: string): number {
-  let h = 0;
-  for (const ch of `${homeStation}|${destination}`) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return (30 + (h % 61)) * 1000;
+// Travel time (20-65 s) from a station to a place. 
+export function estimateTravelMs(): number {
+  return (20 + Math.floor(Math.random() * 45)) * 1000;
 }
 
 // Position along the line: 0 = home station, 1 = destination

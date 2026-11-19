@@ -5,7 +5,7 @@ import NotificationsPanel from './components/NotificationPanel';
 import LogPanel from './components/LogPanel';
 import type { Role } from './types/models';
 
-const ROLES: Role[] = ['Dispatcher', 'Responder', 'Admin', 'Viewer'];
+const ROLES: Role[] = ['Dispatcher', 'Admin', 'Viewer'];
 
 function App() {
   const { user, setRole } = useAuth();

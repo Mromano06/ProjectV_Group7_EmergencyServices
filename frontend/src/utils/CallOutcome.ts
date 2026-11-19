@@ -1,19 +1,8 @@
 import type { CallRecord, LogEntry, Severity } from '../types/models';
 import { SEVERITY_LABEL, formatDuration } from './Labels';
 
-// Small seeded random generator, so the reducer stays pure
-export function seededRandom(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+export const random = (): number => Math.random();
 
-// MOCK RULES: replace with real numbers from the after-action report
 const DEATH_CHANCE: Record<Severity, number> = { 1: 0.55, 2: 0.3, 3: 0.12, 4: 0.02 };
 const MAX_DEATHS: Record<Severity, number> = { 1: 3, 2: 2, 3: 1, 4: 1 };
 
@@ -32,7 +21,7 @@ export function buildCompletionLog(r: CallRecord): Omit<LogEntry, 'id'> {
     message: `${r.successful ? 'Call successful' : 'Call unsuccessful'}: ${r.title} at ${r.locationLabel}`,
     details: [
       `${SEVERITY_LABEL[r.severity]} ${r.incidentType.toLowerCase()} call · response time ${formatDuration(r.responseMs)}`,
-      `Units sent: ${r.responders.join(', ')} (needed ${r.requiredUnitType})`,
+      `Units sent: ${r.responders.join(', ')}`,
       r.deaths > 0 ? `Deaths: ${r.deaths}, recorded at ${r.hospitalName}` : 'Deaths: 0',
     ],
   };
