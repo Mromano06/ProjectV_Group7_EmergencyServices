@@ -3,7 +3,6 @@ import { useAuth } from '../auth/AuthContext';
 import { canManageDispatch } from '../auth/Permissions';
 import { useDispatchStore } from '../state/DispatchContext';
 import type { IncidentType, Severity, UnitType } from '../types/models';
-import { UNIT_IMAGES } from '../utils/Images';
 
 import '../styles/Panels.css';
 
