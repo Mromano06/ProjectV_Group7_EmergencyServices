@@ -144,17 +144,16 @@ builder.Services.AddScoped<IServiceTokenProvider, DevelopmentServiceTokenProvide
 var gateway = builder.Configuration["Services:GatewayBaseUrl"];
 
 
-// Transit integration
-builder.Services.AddHttpClient<ITransitWarningClient, TransitWarningClient>(client =>
+// Transit integration – warning notices go through the API gateway (SH-A03)
+// with our service-account token (SH-S07), like the other integrations.
+builder.Services.AddHttpClient<ITransitWarningClient, TransitWarningClient>(http =>
 {
-    var transitUrl = builder.Configuration["Services:TransitBaseUrl"];
-
-    if (!string.IsNullOrWhiteSpace(transitUrl))
+    if (!string.IsNullOrWhiteSpace(gateway))
     {
-        client.BaseAddress = new Uri(transitUrl);
+        http.BaseAddress = new Uri(gateway);
     }
 
-    client.Timeout = TimeSpan.FromSeconds(5);
+    http.Timeout = TimeSpan.FromSeconds(5);
 });
 
 
