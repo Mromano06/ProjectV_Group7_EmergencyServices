@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,20 +19,29 @@ namespace MyApplication.Api.Tests.Integration;
 /// real controllers, real services, real routing and real [Authorize] rules – with only
 /// these swaps so tests are fast and work on any laptop:
 ///
-///   SQL Server        -> an in-memory database (fresh for each test class)
-///   JWT login         -> TestAuthHandler (pick a role with a header)
-///   Public Transport  -> FakeTransitClient (records notices instead of sending them)
-///   Warning simulator -> turned off (so random warnings don't appear mid-test)
-///
-/// Teammates: if your feature calls another city service, swap its client here the same way
-/// Transit is swapped, so tests never depend on another team's server being up.
+///   SQL Server            -> SQLite in memory (a real SQL database: transactions, unique
+///                            indexes and check constraints all work). Fresh per test class.
+///   JWT login             -> TestAuthHandler (pick a role with a header)
+///   Public Transport      -> FakeTransitClient (records notices instead of sending them)
+///   Budget / HR / Maintenance (through the gateway) -> FakeGateway (tests choose the replies)
+///   Service-account token -> FakeServiceTokenProvider
+///   Warning simulator     -> turned off (so random warnings don't appear mid-test)
 /// </summary>
 public class EmergencyApiFactory : WebApplicationFactory<Program>
 {
-    private readonly string _databaseName = "EmergencyTests-" + Guid.NewGuid();
+    // An in-memory SQLite database lives as long as this connection stays open.
+    private readonly SqliteConnection _connection = new("DataSource=:memory:");
+
+    public EmergencyApiFactory()
+    {
+        _connection.Open();
+    }
 
     /// <summary>The fake Transit service – tests can check what was sent, or make it "fail".</summary>
     public FakeTransitClient Transit { get; } = new();
+
+    /// <summary>The fake gateway in front of Budget, HR and Maintenance.</summary>
+    public FakeGateway Gateway { get; } = new();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -39,10 +49,13 @@ public class EmergencyApiFactory : WebApplicationFactory<Program>
 
         builder.ConfigureTestServices(services =>
         {
-            // ---- Database: SQL Server -> in-memory ----
+            // ---- Database: SQL Server -> SQLite in memory ----
+            services.RemoveAll<EmergencyDbContext>();
             services.RemoveAll<DbContextOptions<EmergencyDbContext>>();
             services.RemoveAll<IDbContextOptionsConfiguration<EmergencyDbContext>>();
-            services.AddDbContext<EmergencyDbContext>(options => options.UseInMemoryDatabase(_databaseName));
+            var options = new DbContextOptionsBuilder<EmergencyDbContext>().UseSqlite(_connection).Options;
+            services.AddSingleton(options);
+            services.AddScoped<EmergencyDbContext>(_ => new SqliteTestDbContext(options));
 
             // ---- Turn off the random warning simulator ----
             var simulator = services.SingleOrDefault(d =>
@@ -57,10 +70,32 @@ public class EmergencyApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<ITransitWarningClient>();
             services.AddSingleton<ITransitWarningClient>(Transit);
 
+            // ---- Other teams' services (through the gateway) -> fake gateway ----
+            services.RemoveAll<IServiceTokenProvider>();
+            services.AddSingleton<IServiceTokenProvider, FakeServiceTokenProvider>();
+
+            services.AddHttpClient<BudgetFinanceClient>(c => c.BaseAddress = new Uri(FakeGateway.BaseUrl))
+                .ConfigurePrimaryHttpMessageHandler(() => Gateway);
+            services.AddHttpClient<StaffHrClient>(c => c.BaseAddress = new Uri(FakeGateway.BaseUrl))
+                .ConfigurePrimaryHttpMessageHandler(() => Gateway);
+            services.AddHttpClient<RoadClosureClient>(c => c.BaseAddress = new Uri(FakeGateway.BaseUrl))
+                .ConfigurePrimaryHttpMessageHandler(() => Gateway);
+
             // ---- Login: JWT -> test login by role header ----
             services.AddAuthentication(TestAuthHandler.SchemeName)
                 .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.SchemeName, _ => { });
         });
+    }
+
+    protected override IHost CreateHost(IHostBuilder builder)
+    {
+        var host = base.CreateHost(builder);
+
+        // Build all the tables from the team's real model.
+        using var scope = host.Services.CreateScope();
+        scope.ServiceProvider.GetRequiredService<EmergencyDbContext>().Database.EnsureCreated();
+
+        return host;
     }
 
     /// <summary>
@@ -75,5 +110,35 @@ public class EmergencyApiFactory : WebApplicationFactory<Program>
             client.DefaultRequestHeaders.Add(TestAuthHandler.RoleHeader, role);
         }
         return client;
+    }
+
+    /// <summary>An HTTP client logged in as another city service's account, e.g. "security".</summary>
+    public HttpClient CreateServiceClient(string serviceName)
+    {
+        var client = CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.ClaimsHeader, $"service={serviceName}");
+        return client;
+    }
+
+    /// <summary>
+    /// Puts data straight into the test database – for things the API has no endpoint to
+    /// create (e.g. hospitals).
+    /// </summary>
+    public async Task SeedAsync(Action<EmergencyDbContext> add)
+    {
+        _ = CreateClient(); // make sure the API (and database) has started
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<EmergencyDbContext>();
+        add(db);
+        await db.SaveChangesAsync();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+        if (disposing)
+        {
+            _connection.Dispose();
+        }
     }
 }

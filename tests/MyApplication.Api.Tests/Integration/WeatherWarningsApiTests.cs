@@ -309,6 +309,21 @@ public class WeatherWarningsApiTests : IClassFixture<EmergencyApiFactory>
         Assert.NotNull(created.LastSentToTransitAt);
     }
 
+    // TC-API-WW-18
+    [Fact]
+    [Trait("Requirement", "SH-I04")]
+    public async Task AllWarningDates_AreSentAsUtc()
+    {
+        var created = await CreateWarningAsync(affectsTransit: true);   // sets lastSentToTransitAt
+        await _admin.PutAsJsonAsync($"{Url}/{created.Id}", Extend(DateTime.UtcNow.AddDays(1))); // sets updatedAt
+
+        var json = await _viewer.GetStringAsync($"{Url}/{created.Id}");
+        var notUtc = IncidentsApiTests.FindNonUtcDates(System.Text.Json.JsonDocument.Parse(json).RootElement, "$").ToList();
+
+        Assert.True(notUtc.Count == 0,
+            "These dates are missing the 'Z' (UTC) marker (SH-I04):\n  " + string.Join("\n  ", notUtc));
+    }
+
     // TC-API-WW-17
     [Fact]
     [Trait("Requirement", "SH-A07")]

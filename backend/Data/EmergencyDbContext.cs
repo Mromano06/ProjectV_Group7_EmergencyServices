@@ -203,6 +203,19 @@ public class EmergencyDbContext : DbContext
             e.Property(x => x.FiledAt).HasConversion(utc);
         });
 
+         // Every DateTime comes back marked as UTC, so JSON dates end in "Z" (SH-I04).
+        var utcNullable = new ValueConverter<DateTime?, DateTime?>(
+            v => v, v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : v);
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            foreach (var property in entityType.GetProperties())
+            {
+                if (property.GetValueConverter() != null) continue;
+                if (property.ClrType == typeof(DateTime)) property.SetValueConverter(utc);
+                else if (property.ClrType == typeof(DateTime?)) property.SetValueConverter(utcNullable);
+            }
+        }
+
     }
 
     /// <summary>

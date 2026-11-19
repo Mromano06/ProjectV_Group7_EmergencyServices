@@ -1,3 +1,6 @@
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using MyApplication.Api.Integration;
 using MyApplication.Api.Models;
 
 namespace MyApplication.Api.Clients;
@@ -11,35 +14,76 @@ public interface ITransitWarningClient
     Task<bool> SendWarningNoticeAsync(TransitWarningNotice notice);
 }
 
+/// <summary>
+/// Sends warning notices to Public Transport the same way our other integrations work:
+///   - through the API gateway (SH-A03), never straight to Transit's container
+///   - with our service-account token (SH-S07), so Transit knows the call is from Emergency Services
+///
+/// It never throws: if Transit, the gateway or the token isn't available it logs why and
+/// returns false, so issuing a warning still works when Transit is down (SH-A07).
+/// </summary>
 public class TransitWarningClient : ITransitWarningClient
 {
+    /// <summary>Used if "Services:TransitWarningPath" isn't set. Transit still has to confirm this path.</summary>
+    public const string DefaultPath = "api/transit/v1/disruptions/weather-notices";
+
     private readonly HttpClient _http;
+    private readonly IServiceTokenProvider _tokens;
     private readonly IConfiguration _config;
     private readonly ILogger<TransitWarningClient> _logger;
 
-    public TransitWarningClient(HttpClient http, IConfiguration config, ILogger<TransitWarningClient> logger)
+    public TransitWarningClient(
+        HttpClient http,
+        IServiceTokenProvider tokens,
+        IConfiguration config,
+        ILogger<TransitWarningClient> logger)
     {
         _http = http;
+        _tokens = tokens;
         _config = config;
         _logger = logger;
     }
 
     public async Task<bool> SendWarningNoticeAsync(TransitWarningNotice notice)
     {
-        // The address comes from appsettings / environment variables (SH-A06), never hard-coded.
-        // Transit hasn't confirmed their endpoint yet, so the path is a setting too.
-        var path = _config["Services:TransitWarningPath"];
-
-        if (_http.BaseAddress == null || string.IsNullOrWhiteSpace(path))
+        // The gateway address comes from "Services:GatewayBaseUrl" (set in Program.cs).
+        if (_http.BaseAddress is null)
         {
-            _logger.LogWarning("Transit URL not configured – warning {Id} was not sent to Public Transport.", notice.WarningId);
+            _logger.LogWarning("API gateway URL not configured – warning {Id} was not sent to Public Transport.", notice.WarningId);
             return false;
         }
 
+        var path = _config["Services:TransitWarningPath"];
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            path = DefaultPath;
+        }
+
+        string token;
         try
         {
-            var response = await _http.PostAsJsonAsync(path, notice);
-            if (response.IsSuccessStatusCode) return true;
+            token = await _tokens.GetTokenAsync(CancellationToken.None);
+        }
+        catch (ExternalServiceException ex)
+        {
+            _logger.LogWarning("No service-account token ({Reason}) – warning {Id} was not sent to Public Transport.",
+                ex.Message, notice.WarningId);
+            return false;
+        }
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, path)
+        {
+            Content = JsonContent.Create(notice)
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        try
+        {
+            using var response = await _http.SendAsync(request);
+            if (response.IsSuccessStatusCode)
+            {
+                return true;
+            }
 
             _logger.LogWarning("Transit rejected warning {Id}: HTTP {Status}", notice.WarningId, (int)response.StatusCode);
             return false;

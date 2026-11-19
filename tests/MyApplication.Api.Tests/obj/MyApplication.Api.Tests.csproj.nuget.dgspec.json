@@ -1,7 +1,7 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\angel\\OneDrive\\Documents\\GitHub\\ProjectV_Group1_EmergencyServices\\tests\\MyApplication.Api.Tests\\MyApplication.Api.Tests.csproj": {}
+    "c:\\Users\\angel\\OneDrive\\Documents\\GitHub\\ProjectV_Group1_EmergencyServices\\tests\\MyApplication.Api.Tests\\MyApplication.Api.Tests.csproj": {}
   },
   "projects": {
     "C:\\Users\\angel\\OneDrive\\Documents\\GitHub\\ProjectV_Group1_EmergencyServices\\backend\\MyApplication.Api.csproj": {
@@ -540,14 +540,14 @@
         }
       }
     },
-    "C:\\Users\\angel\\OneDrive\\Documents\\GitHub\\ProjectV_Group1_EmergencyServices\\tests\\MyApplication.Api.Tests\\MyApplication.Api.Tests.csproj": {
+    "c:\\Users\\angel\\OneDrive\\Documents\\GitHub\\ProjectV_Group1_EmergencyServices\\tests\\MyApplication.Api.Tests\\MyApplication.Api.Tests.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\angel\\OneDrive\\Documents\\GitHub\\ProjectV_Group1_EmergencyServices\\tests\\MyApplication.Api.Tests\\MyApplication.Api.Tests.csproj",
+        "projectUniqueName": "c:\\Users\\angel\\OneDrive\\Documents\\GitHub\\ProjectV_Group1_EmergencyServices\\tests\\MyApplication.Api.Tests\\MyApplication.Api.Tests.csproj",
         "projectName": "MyApplication.Api.Tests",
-        "projectPath": "C:\\Users\\angel\\OneDrive\\Documents\\GitHub\\ProjectV_Group1_EmergencyServices\\tests\\MyApplication.Api.Tests\\MyApplication.Api.Tests.csproj",
+        "projectPath": "c:\\Users\\angel\\OneDrive\\Documents\\GitHub\\ProjectV_Group1_EmergencyServices\\tests\\MyApplication.Api.Tests\\MyApplication.Api.Tests.csproj",
         "packagesPath": "C:\\Users\\angel\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\angel\\OneDrive\\Documents\\GitHub\\ProjectV_Group1_EmergencyServices\\tests\\MyApplication.Api.Tests\\obj\\",
+        "outputPath": "c:\\Users\\angel\\OneDrive\\Documents\\GitHub\\ProjectV_Group1_EmergencyServices\\tests\\MyApplication.Api.Tests\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -594,9 +594,13 @@
           "dependencies": {
             "Microsoft.AspNetCore.Mvc.Testing": {
               "target": "Package",
-              "version": "[11.0.0, )"
+              "version": "[11.*-*, )"
             },
             "Microsoft.EntityFrameworkCore.InMemory": {
+              "target": "Package",
+              "version": "[11.*-*, )"
+            },
+            "Microsoft.EntityFrameworkCore.Sqlite": {
               "target": "Package",
               "version": "[11.*-*, )"
             },
