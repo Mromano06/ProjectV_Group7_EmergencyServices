@@ -10,6 +10,7 @@ Debug/
 Release/
 docs/
 
+
 # Visual Studio files
 .vs/
 *.user
