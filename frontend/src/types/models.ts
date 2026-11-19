@@ -17,6 +17,55 @@ export type Role = 'Dispatcher' | 'Responder' | 'Admin' | 'Viewer';
 
 export type DispatchPhase = 'outbound' | 'onScene' | 'returning';
 
+export type WarningSeverity = 'Statement' | 'Advisory' | 'Watch' | 'Warning';
+
+export interface WeatherWarning {
+  id: string;                      // GUID from the server
+  type: string;
+  severity: WarningSeverity;
+  area: string;
+  description?: string;
+  startsAt: string;                // UTC ISO string
+  endsAt: string;
+  status: 'Scheduled' | 'Active' | 'Ended';
+  affectsTransit: boolean;
+}
+
+export type LogLevel = 'info' | 'success' | 'warning' | 'danger';
+export type LogCategory = 'call' | 'unit' | 'weather' | 'system';
+
+export interface LogEntry {
+  id: number;
+  time: number;                    // ms since epoch
+  level: LogLevel;
+  category: LogCategory;
+  message: string;
+  details?: string[];
+}
+
+// Client-side tally only; the server has no per-hospital death count
+export interface HospitalTally {
+  id: number;
+  name: string;
+  erStatus: ErStatus;
+  deaths: number;
+}
+
+// One finished call, like a mini after-action report
+export interface CallRecord {
+  noticeId: number;
+  title: string;
+  incidentType: IncidentType;
+  severity: Severity;
+  locationLabel: string;
+  requiredUnitType: UnitType;
+  responders: string[];
+  responseMs: number;              // call reported -> correct unit on scene
+  deaths: number;
+  hospitalName: string | null;
+  successful: boolean;
+  completedAt: number;
+}
 
 export interface Location {
   address?: string;

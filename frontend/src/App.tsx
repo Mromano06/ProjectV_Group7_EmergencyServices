@@ -2,6 +2,7 @@ import { useAuth } from './auth/AuthContext';
 import AvailableUnits from './components/AvailableUnitPanel';
 import DispatchTracker from './components/DispatchTracker';
 import NotificationsPanel from './components/NotificationPanel';
+import LogPanel from './components/LogPanel';
 import type { Role } from './types/models';
 
 const ROLES: Role[] = ['Dispatcher', 'Responder', 'Admin', 'Viewer'];
@@ -21,6 +22,7 @@ function App() {
       </div>
       <NotificationsPanel />
       <AvailableUnits />
+      <LogPanel />
       <DispatchTracker />
     </>
   );
