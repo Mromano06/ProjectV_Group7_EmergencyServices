@@ -1,11 +1,11 @@
-import { useAuth } from './auth/AuthContext';
+// import { useAuth } from './auth/AuthContext';
 import AvailableUnits from './components/AvailableUnitPanel';
 import DispatchTracker from './components/DispatchTracker';
 import NotificationsPanel from './components/NotificationPanel';
 import LogPanel from './components/LogPanel';
-import type { Role } from './types/models';
+// import type { Role } from './types/models';
 
-const ROLES: Role[] = ['Dispatcher', 'Admin', 'Viewer'];
+// const ROLES: Role[] = ['Dispatcher', 'Admin', 'Viewer'];
 import { useEffect, useState } from 'react'
 import './App.css'
 import { getApiData } from './api/apiClient'
@@ -41,20 +41,18 @@ function App() {
       })
   }, [])
 
-  if (loading) {
-    return <p className="message">Loading weather warnings...</p>
-  }
-
-  if (error) {
-    return <p className="message error">Could not load warnings: {error}</p>
-  }
-
   return (
     <main className="app">
       <h1>Emergency Services</h1>
       <h2>Active Weather Warnings</h2>
 
-      {warnings.length === 0 ? (
+      {loading ? (
+        <p className="message">Loading weather warnings...</p>
+      ) : error ? (
+        <p className="message error">
+          Could not load warnings: {error}
+        </p>
+      ) : warnings.length === 0 ? (
         <p className="message">No active warnings.</p>
       ) : (
         <section className="warning-list">
@@ -98,6 +96,18 @@ function App() {
           ))}
         </section>
       )}
+
+      <section className="dashboard">
+          <h2>Emergency Services Dashboard</h2>
+
+          <AvailableUnits />
+
+          <DispatchTracker />
+
+          <NotificationsPanel />
+
+          <LogPanel />
+        </section>
     </main>
   )
 }

@@ -2,7 +2,7 @@ import { useAuth } from '../auth/AuthContext';
 import { canManageDispatch } from '../auth/Permissions';
 import { useDispatchStore } from '../state/DispatchContext';
 import UnitBadge from '../components/UnitBadge';
-import '../styles/panels.css';
+import '../styles/Panels.css';
 
 export default function AvailableUnits() {
   const { user } = useAuth();
