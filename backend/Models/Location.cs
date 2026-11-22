@@ -8,9 +8,12 @@ namespace MyApplication.Api.Models;
 /// </summary>
 public class Location
 {
+    /// <summary> lattitude of location </summary>
     public double Latitude { get; set; }
 
+    /// <summary> longitude of location </summary>
     public double Longitude { get; set; }
 
+    /// <summary> street address of location in city. optional </summary>
     public string? Address { get; set; }
 }
