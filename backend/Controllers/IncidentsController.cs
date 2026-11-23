@@ -14,14 +14,18 @@ namespace MyApplication.Api.Controllers;
 [Authorize]
 public sealed class IncidentsController(IIncidentService service) : OperationsControllerBase
 {
-    // Gets the currently assigned status of all existing incidents
+    /// <summary> Gets the currently assigned status of all existing incidents </summary>
+    /// <param name="IncidentStatus">filter for a particular incident status </param>
+    /// <param name="IncidentType"> filter for a particular incident type </param>
     [HttpGet]
     [Authorize(Roles = "emergency:Admin,emergency:Dispatcher,emergency:Responder")]
     public async Task<IActionResult> List([FromQuery] IncidentStatus? status, [FromQuery] IncidentType? type,
         [FromQuery] int page = 1, [FromQuery] int pageSize = 25, CancellationToken ct = default)
         => Ok(await service.ListAsync(status, type, page, pageSize, ct));
 
-    // Gets the currently assigned status of a specific existing incident
+    /// <summary>Gets the currently assigned status of a specific existing incident </summary>
+    /// <param name="id">id of the incident </param>
+    /// <param name="ct"> token </param>
     [HttpGet("{id:guid}")]
     [Authorize(Roles = "emergency:Admin,emergency:Dispatcher,emergency:Responder")]
     public async Task<IActionResult> Get(Guid id, CancellationToken ct)
@@ -31,7 +35,10 @@ public sealed class IncidentsController(IIncidentService service) : OperationsCo
     }
 
     // Security's service credential claim/role needs confirmation with Registration team.
-    // Requests the creation of a brand new incident
+
+    ///<summary> Requests the creation of a brand new incident </summary>
+    ///<param name="request"> request body </param>
+    ///<param name="ct"> token </param>
     [HttpPost]
     [Authorize(Policy = "EmergencyIncidentCreate")]
     public async Task<IActionResult> Create([FromBody] IncidentCreateRequest request, CancellationToken ct)
@@ -41,13 +48,19 @@ public sealed class IncidentsController(IIncidentService service) : OperationsCo
         return CreatedAtAction(nameof(Get), new { id = result.Value!.Id }, result.Value);
     }
 
-    // Requests the status update of an existing incident
+    ///<summary>Requests the status update of an existing incident</summary>
+    ///<param name="id"> id of existing incident </param>
+    ///<param name="request"> request body </param>
+    ///<param name="ct"> token </param>
     [HttpPatch("{id:guid}/status")]
     [Authorize(Roles = "emergency:Admin,emergency:Dispatcher,emergency:Responder")]
     public async Task<IActionResult> Status(Guid id, [FromBody] ChangeIncidentStatusRequest request, CancellationToken ct)
         => FromService(await service.ChangeStatusAsync(id, request, CurrentUserId(), ct));
 
-    // Requests the cretation of a new incident report
+    ///<summary> Requests the creation of a new incident report</summary>
+    ///<param name="id"> id of relevant incident </param>
+    ///<param name="request"> request </param>
+    ///<param name="ct" token </param>
     [HttpPost("{id:guid}/report")]
     [Authorize(Roles = "emergency:Admin,emergency:Responder")]
     public async Task<IActionResult> Report(Guid id, [FromBody] FileAfterActionReportRequest request, CancellationToken ct)

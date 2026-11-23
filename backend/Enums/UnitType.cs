@@ -5,5 +5,11 @@ namespace MyApplication.Api.Enums;
 /// <summary>
 /// represents the type of unit a response unit is
 /// </summary>
-public enum UnitType { Engine, Ladder, Ambulance, Motorcycle }
+public enum UnitType
+{
+    Engine,
+    Ladder, 
+    Ambulance,
+    Motorcycle
+}
 

@@ -6,4 +6,12 @@ namespace MyApplication.Api.Enums;
 /// represents the status of an incident, from reporting to closure
 /// req. ES-FR-003
 /// </summary>
-public enum IncidentStatus { Reported, Dispatched, EnRoute, OnScene, Resolved, Closed }
+public enum IncidentStatus 
+{ 
+    Reported,
+    Dispatched, 
+    EnRoute,
+    OnScene, 
+    Resolved,
+    Closed
+}

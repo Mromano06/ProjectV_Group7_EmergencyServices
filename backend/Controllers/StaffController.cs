@@ -16,7 +16,11 @@ namespace MyApplication.Api.Controllers;
 [Authorize(Roles = "emergency:Admin,emergency:Dispatcher,emergency:Viewer")]
 public sealed class StaffController(StaffHrClient client) : ControllerBase
 {
-    // Requests a summary of all current staff
+    /// <summary>
+    /// Requests a summary of all current staff
+    /// </summary>
+    /// <param name="ct">token</param>
+    /// <returns></returns>
     [HttpGet("summary")]
     public async Task<IActionResult> Summary(CancellationToken ct)
     {
@@ -24,7 +28,12 @@ public sealed class StaffController(StaffHrClient client) : ControllerBase
         catch (ExternalServiceException ex) { return Fail(ex); }
     }
 
-    // Requests for staff hiring, firing or other changes
+    /// <summary>
+    ///  Requests for staff hiring, firing or other changes
+    /// </summary>
+    /// <param name="request">request body</param>
+    /// <param name="ct">token</param>
+    /// <returns></returns>
     [HttpPost("requests")]
     [Authorize(Roles = "emergency:Admin")]
     public async Task<IActionResult> Submit(StaffChangeRequest request, CancellationToken ct)
@@ -39,7 +48,11 @@ public sealed class StaffController(StaffHrClient client) : ControllerBase
         catch (ExternalServiceException ex) { return Fail(ex); }
     }
 
-    // Error handling for the staff dto
+    /// <summary>
+    ///  Error handling for the staff dto
+    /// </summary>
+    /// <param name="ex">exception</param>
+    /// <returns></returns>
     private ObjectResult Fail(ExternalServiceException ex) => StatusCode(ex.HttpStatus,
         new ErrorResponse("hr_unavailable", ex.Message, Activity.Current?.Id ?? HttpContext.TraceIdentifier));
 }

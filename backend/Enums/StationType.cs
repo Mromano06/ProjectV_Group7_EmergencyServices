@@ -6,4 +6,8 @@ namespace MyApplication.Api.Enums;
 /// represents what sort of station a station is
 /// req. ES-FR-011
 /// </summary>
-public enum StationType { Fire, EMS }
+public enum StationType 
+{
+    Fire,
+    EMS
+}

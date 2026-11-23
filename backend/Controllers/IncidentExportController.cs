@@ -12,7 +12,13 @@ namespace MyApplication.Api.Controllers;
 [Authorize(Roles = "emergency:Admin,emergency:Dispatcher")]
 public sealed class IncidentExportController(IStatsService service) : OperationsControllerBase
 {
-    // Handles exporting of emergency incidents into a CSV format
+    /// <summary>
+    /// Handles exporting of emergency incidents into a CSV format
+    /// </summary>
+    /// <param name="from">starting timestamp</param>
+    /// <param name="to">ending timestamp</param>
+    /// <param name="ct">token</param>
+    /// <returns></returns>
     [HttpGet("export")]
     public async Task<IActionResult> Export([FromQuery] DateTimeOffset from, [FromQuery] DateTimeOffset to, CancellationToken ct)
     {

@@ -16,7 +16,11 @@ namespace MyApplication.Api.Controllers;
 [Authorize(Roles = "emergency:Admin,emergency:Dispatcher,emergency:Responder,emergency:Viewer")]
 public sealed class BudgetController(BudgetFinanceClient client) : ControllerBase
 {
-    // Requests the current budget information
+    /// <summary>
+    /// Requests the current budget information
+    /// </summary>
+    /// <param name="ct">token</param>
+    /// <returns></returns>
     [HttpGet]
     public async Task<IActionResult> Get(CancellationToken ct)
     {
@@ -24,7 +28,12 @@ public sealed class BudgetController(BudgetFinanceClient client) : ControllerBas
         catch (ExternalServiceException ex) { return Fail(ex); }
     }
 
-    // Request to create a new expenses report
+    /// <summary>
+    /// Request to create a new expenses report
+    /// </summary>
+    /// <param name="request">request body</param>
+    /// <param name="ct">token</param>
+    /// <returns></returns>
     [HttpPost("expenses")]
     [Authorize(Roles = "emergency:Admin")]
     public async Task<IActionResult> Expense(ExpenseRequest request, CancellationToken ct)
@@ -34,7 +43,7 @@ public sealed class BudgetController(BudgetFinanceClient client) : ControllerBas
         catch (ExternalServiceException ex) { return Fail(ex); }
     }
 
-    // Dto error handling
+    ///<summary>Dto error handling </summary> 
     private ObjectResult Fail(ExternalServiceException ex) => StatusCode(ex.HttpStatus,
         new ErrorResponse("budget_unavailable", ex.Message, Activity.Current?.Id ?? HttpContext.TraceIdentifier));
 }
