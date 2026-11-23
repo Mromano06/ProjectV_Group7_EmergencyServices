@@ -11,6 +11,15 @@ public sealed class RoadClosureClient(HttpClient http, IServiceTokenProvider tok
 {
     // Gets nearby incidents to determine who is effected
     // TODO: Also decide if this works on Lat/long
+    /// <summary>
+    /// grabs road closures from an incident location by asking maintenance
+    /// returns road closures within 1km of incident
+    /// </summary>
+    /// <param name="latitude">lat of incident</param>
+    /// <param name="longitude">long of incident</param>
+    /// <param name="ct">token</param>
+    /// <returns>road closures (list)</returns>
+    /// <exception cref="ExternalServiceException"></exception>
     public async Task<IReadOnlyList<NearbyRoadClosureDto>> GetNearbyAsync(
         double latitude, double longitude, CancellationToken ct)
     {

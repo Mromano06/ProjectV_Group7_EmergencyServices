@@ -9,7 +9,12 @@ namespace MyApplication.Api.Clients;
 /// <summary>ES-FR-026 / SH-C10/11. Never reads an HR database.</summary>
 public sealed class StaffHrClient(HttpClient http, IServiceTokenProvider tokens)
 {
-    // Gets staff counts based on position
+    /// <summary>
+    /// Gets staff counts based on position (asks staff gateway route)
+    /// </summary>
+    /// <param name="ct">token</param>
+    /// <returns>json results body</returns>
+    /// <exception cref="ExternalServiceException"></exception>
     public async Task<IReadOnlyList<ProfessionCount>> GetCountsAsync(CancellationToken ct)
     {
         using var request = await NewRequestAsync(HttpMethod.Get, "api/hr/v1/staff?department=emergency", ct);
@@ -28,7 +33,12 @@ public sealed class StaffHrClient(HttpClient http, IServiceTokenProvider tokens)
             .OrderBy(x => x.Profession).ToList();
     }
 
-    // Handles getting an exisiting request from the staffing client
+    /// <summary>
+    /// Handles getting an exisiting request from the staffing client
+    /// </summary>
+    /// <param name="body">request body</param>
+    /// <param name="ct">token</param>
+    /// <returns>json results body</returns>
     public async Task<JsonElement> SubmitRequestAsync(StaffChangeRequest body, CancellationToken ct)
     {
         using var request = await NewRequestAsync(HttpMethod.Post, "api/hr/v1/staff-requests", ct);
@@ -36,7 +46,14 @@ public sealed class StaffHrClient(HttpClient http, IServiceTokenProvider tokens)
         return await SendJsonAsync(request, ct);
     }
 
-    // Handles creating a new request to the staff client
+    /// <summary>
+    ///  Handles creating a new request to the staff client
+    /// </summary>
+    /// <param name="method">http method</param>
+    /// <param name="path">http path</param>
+    /// <param name="ct">token</param>
+    /// <returns>proper useable request</returns>
+    /// <exception cref="ExternalServiceException"></exception>
     private async Task<HttpRequestMessage> NewRequestAsync(HttpMethod method, string path, CancellationToken ct)
     {
         if (http.BaseAddress is null)
@@ -47,7 +64,13 @@ public sealed class StaffHrClient(HttpClient http, IServiceTokenProvider tokens)
         return request;
     }
 
-    // Sends the actual JSON request 
+    /// <summary>
+    ///  Sends the actual JSON request to given route. returns response
+    /// </summary>
+    /// <param name="request">http request</param>
+    /// <param name="ct">token</param>
+    /// <returns>json response</returns>
+    /// <exception cref="ExternalServiceException"></exception>
     private async Task<JsonElement> SendJsonAsync(HttpRequestMessage request, CancellationToken ct)
     {
         try

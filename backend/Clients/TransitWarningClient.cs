@@ -43,7 +43,8 @@ public class TransitWarningClient : ITransitWarningClient
         _config = config;
         _logger = logger;
     }
-
+    
+    ///<summary>sends warning notice to transit client and gets response </summary>
     public async Task<bool> SendWarningNoticeAsync(TransitWarningNotice notice)
     {
         // The gateway address comes from "Services:GatewayBaseUrl" (set in Program.cs).

@@ -12,12 +12,23 @@ namespace MyApplication.Api.Clients;
 public sealed class BudgetFinanceClient(HttpClient http, IServiceTokenProvider tokens)
 {
     
+    /// <summary>
+    /// creates and sends a request to budget, and returns the results
+    /// </summary>
+    /// <param name="ct">token</param>
+    /// <returns>response contents (json)</returns>
     public async Task<JsonElement> GetAllocationAsync(CancellationToken ct)
     {
         using var request = await CreateRequestAsync(HttpMethod.Get, "api/budget/v1/allocations/emergency", ct);
         return await SendJsonAsync(request, ct);
     }
 
+    /// <summary>
+    /// sends a post request to budget , and returns the results
+    /// </summary>
+    /// <param name="body">request body</param>
+    /// <param name="ct">token</param>
+    /// <returns>reponse contents</returns>
     public async Task<JsonElement> SubmitExpenseAsync(ExpenseRequest body, CancellationToken ct)
     {
         using var request = await CreateRequestAsync(HttpMethod.Post, "api/budget/v1/expenses", ct);
@@ -25,6 +36,14 @@ public sealed class BudgetFinanceClient(HttpClient http, IServiceTokenProvider t
         return await SendJsonAsync(request, ct);
     }
 
+    /// <summary>
+    /// asynchronous helper function to generate valid http request
+    /// </summary>
+    /// <param name="method">http method</param>
+    /// <param name="path">http path</param>
+    /// <param name="ct">token</param>
+    /// <returns>request</returns>
+    /// <exception cref="ExternalServiceException"></exception>
     private async Task<HttpRequestMessage> CreateRequestAsync(HttpMethod method, string path, CancellationToken ct)
     {
         if (http.BaseAddress is null)
@@ -35,6 +54,13 @@ public sealed class BudgetFinanceClient(HttpClient http, IServiceTokenProvider t
         return request;
     }
 
+    /// <summary>
+    /// asynchronous helper function that sends request and gives you back the json results
+    /// </summary>
+    /// <param name="request">http request</param>
+    /// <param name="ct">token</param>
+    /// <returns>json body</returns>
+    /// <exception cref="ExternalServiceException"></exception>
     private async Task<JsonElement> SendJsonAsync(HttpRequestMessage request, CancellationToken ct)
     {
         try

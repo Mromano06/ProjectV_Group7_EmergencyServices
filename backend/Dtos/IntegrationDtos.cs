@@ -4,12 +4,25 @@ namespace MyApplication.Api.Dtos;
 // Matthew Romano - Nov 14th, 2026 - Extra/Util Dtos
 
 // Creates an expense request
+
 /// <summary>Proposed DTO; verify Budget team's JSON contract before enabling submission.</summary>
+//public sealed record ExpenseRequest(
+//  [Range(typeof(decimal), "0.01", "999999999.99")] decimal Amount,
+//  [Required, MinLength(1)] string Category,
+//  [Required, MinLength(1)] string Description,
+//  DateTime IncurredAt);
+
+// SENT BY BUDGET TEAM :
+/// <summary>DTO based on budget team's contract</summary>
 public sealed record ExpenseRequest(
+    [Required, MinLength(1)] string DepartmentCode,
     [Range(typeof(decimal), "0.01", "999999999.99")] decimal Amount,
-    [Required, MinLength(1)] string Category,
-    [Required, MinLength(1)] string Description,
-    DateTime IncurredAt);
+    [Required, MinLength(1)] string Description
+    );
+//I just copied what they send on discord that should be fine right?
+//really hope I didn't break anything...
+
+ 
 
 // Creates a staff change request
 /// <summary>Proposed DTO; verify HR team's request contract.</summary>
