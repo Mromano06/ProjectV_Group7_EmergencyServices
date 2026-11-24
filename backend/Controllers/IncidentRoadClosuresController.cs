@@ -16,7 +16,12 @@ namespace MyApplication.Api.Controllers;
 public sealed class IncidentRoadClosuresController(EmergencyDbContext db, RoadClosureClient maintenance)
     : OperationsControllerBase
 {
-    // Used to get nearby road closures
+    /// <summary>
+    /// Used to get nearby road closures
+    /// </summary>
+    /// <param name="incidentId">id of relevant incident</param>
+    /// <param name="ct">token</param>
+    /// <returns></returns>
     [HttpGet]
     public async Task<IActionResult> Get(Guid incidentId, CancellationToken ct)
     {

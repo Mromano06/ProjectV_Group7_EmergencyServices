@@ -12,19 +12,25 @@ namespace MyApplication.Api.Controllers;
 /// <summary>Shared SH-I03 response helpers for operations endpoints.</summary>
 public abstract class OperationsControllerBase : ControllerBase
 {
-    // Guid for the current user
+    ///<summary>  Guid for the current user</summary>
     protected Guid CurrentUserId()
     {
         var text = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
         return Guid.TryParse(text, out var result) ? result : Guid.Empty;
     }
 
-    // Error handling for status'
+    /// <summary>
+    /// Error handling for status'
+    /// </summary>
+    /// <param name="status">error status</param>
+    /// <param name="code">error code</param>
+    /// <param name="message">error message</param>
+    /// <returns></returns>
     protected ObjectResult Error(int status, string code, string message) =>
         StatusCode(status, new ErrorResponse(code, message,
             Activity.Current?.Id ?? HttpContext.TraceIdentifier));
 
-    // Error handling for the results of each service
+    /// <summary>Error handling for the results of each service </summary>
     protected IActionResult FromService<T>(ServiceResult<T> result)
     {
         if (result.HttpStatus is >= 200 and < 300)

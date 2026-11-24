@@ -12,5 +12,4 @@ public enum IncidentType
     Hazmat,
     Weather,
     Other
-
 }

@@ -1,14 +1,22 @@
-// Copyright 2026 Mroma
-// 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-// 
-//     https://www.apache.org/licenses/LICENSE-2.0
-// 
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+namespace MyApplication.Api.Models;
 
+// sebastian solorzano, nov 21, hydrant usage model
+
+/// <summary>
+/// represents the usage of a fire hydrant after/for an incident
+/// </summary>
+public class HydrantUsage : AuditableEntity
+{
+    /// <summary> id of the incident </summary>
+    public Guid IncidentId { get; set; }
+
+    /// <summary> id of the fire hydrant used </summary>
+    public Guid HydrantId { get; set; }
+        //im gonna assume hydrant ids belong to maintenance? since we don't got 'em
+
+    /// <summary> litres of water used from hydrant </summary>
+    public double LitresUsed { get; set; }
+
+    /// <summary> timestamp for maintenance </summary>
+    public DateTime SentToMaintenanceAt { get; set; }
+}

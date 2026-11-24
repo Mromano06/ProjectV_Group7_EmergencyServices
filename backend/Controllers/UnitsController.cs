@@ -8,18 +8,19 @@ namespace MyApplication.Api.Controllers;
 
 // Matthew Romano - Nov 14th, 2026 - Stats Controller Imp
 
+///<summary> routes to manage emergency services units </summary>
 [ApiController]
 [Route("api/emergency/v1/units")]
 [Authorize(Roles = "emergency:Dispatcher,emergency:Admin")]
 public sealed class UnitsController(IUnitService service) : OperationsControllerBase
 {
-    // Requests all current units information
+    ///<summary> Requests all current units information </summary>
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] UnitStatus? status, [FromQuery] UnitType? type,
         [FromQuery] int page = 1, [FromQuery] int pageSize = 25, CancellationToken ct = default)
         => Ok(await service.ListAsync(status, type, page, pageSize, ct));
 
-    // Requests a specific current units information
+    ///<summary> Requests a specific current units information</summary>
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> Get(Guid id, CancellationToken ct)
     {
@@ -27,7 +28,7 @@ public sealed class UnitsController(IUnitService service) : OperationsController
         return unit is null ? Error(404, "unit_not_found", "Unit not found.") : Ok(unit);
     }
 
-    // Request to create a brand new unit
+    ///<summary> Request to create a brand new unit</summary>
     [HttpPost]
     [Authorize(Roles = "emergency:Admin")]
     public async Task<IActionResult> Create(UnitCreateRequest req, CancellationToken ct)
@@ -37,13 +38,13 @@ public sealed class UnitsController(IUnitService service) : OperationsController
         return CreatedAtAction(nameof(Get), new { id = result.Value!.Id }, result.Value);
     }
 
-    // Request to update an already existing unit
+    ///<summary> Request to update an already existing unit</summary>
     [HttpPut("{id:guid}")]
     [Authorize(Roles = "emergency:Admin")]
     public async Task<IActionResult> Update(Guid id, UnitUpdateRequest req, CancellationToken ct)
         => FromService(await service.UpdateAsync(id, req, CurrentUserId(), ct));
 
-    // Request to end/deactivate a unit
+    ///<summary> Request to end/deactivate a unit</summary>
     [HttpPost("{id:guid}/deactivate")]
     [Authorize(Roles = "emergency:Admin")]
     public async Task<IActionResult> Deactivate(Guid id, CancellationToken ct)
