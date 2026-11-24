@@ -1,6 +1,5 @@
 using MyApplication.Api.Models;
 
-
 namespace MyApplication.Api.Clients;
 
 /// <summary>
