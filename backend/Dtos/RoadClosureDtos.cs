@@ -9,4 +9,4 @@ namespace MyApplication.Api.Dtos;
 /// </summary>
 public sealed record NearbyRoadClosureDto(
     string Id, string? Description, DateTimeOffset? ExpectedEndAt,
-    double Latitude, double Longitude, double DistanceKm);
+    double? Latitude, double? Longitude, double? DistanceKm); // null = Transit sent no coordinates

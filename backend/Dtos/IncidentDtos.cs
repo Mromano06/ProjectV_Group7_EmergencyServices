@@ -64,8 +64,10 @@ public sealed record FileAfterActionReportRequest(
 /// <param name="Latitude">latitude</param>
 /// <param name="Longitude">longitude</param>
 /// <param name="ReportedAt">time it was reported at</param>
+/// <param name="Address">street address, for the live board (not caller details, ES-NFR-007)</param>
+/// <param name="Description">what was reported, for the live board</param>
 public sealed record IncidentSummaryDto(Guid Id, string Type, int Severity, string Status,
-    double Latitude, double Longitude, DateTime ReportedAt);
+    double Latitude, double Longitude, DateTime ReportedAt, string? Address, string? Description);
 
 /// <summary>
 /// Holds a status history record for an incident
@@ -124,4 +126,3 @@ public sealed record IncidentDetailDto(
 public sealed record HydrantUsageDto(
     Guid IncidentId, Guid HydrantId, double LitresUsed, DateTime? SentToMaintenanceAt
     );
-//want to change the doubles in the report to a reference to one of these but not sure yet if that'll mess things up?

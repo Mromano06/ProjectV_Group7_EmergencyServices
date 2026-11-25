@@ -1,8 +1,12 @@
 import {
-  createContext, useContext, useEffect, useReducer, useRef,
+  createContext, useCallback, useContext, useEffect, useReducer, useRef,
   type ReactNode,
 } from 'react';
-import { INITIAL_HOSPITALS, INITIAL_UNITS, makeNotice, makeWarning } from '../api/mockData';
+import { ApiError } from '../api/apiClient';
+import {
+  emergencyApi, OPEN_STATUSES, toHospital, toNotice, toUnit, toWarning,
+} from '../api/emergencyApi';
+import { makeTestIncident } from '../api/mockData';
 import type {
   ActiveDispatch, CallRecord, EmergencyNotice, HospitalTally, LogEntry, Unit, UnitStatus,
   WeatherWarning,
@@ -11,32 +15,62 @@ import { buildCompletionLog, rollDeaths } from '../utils/CallOutcome';
 import { estimateTravelMs, getProgress } from '../utils/DispatchMath';
 import { SEVERITY_LABEL, formatDuration, parseUtc } from '../utils/Labels';
 
+// How often the console asks the API for fresh data. ES-FR-004: a new incident must
+// appear within 15 seconds without reloading the page.
+export const DATA_POLL_MS = 5000;
+export const WARNING_POLL_MS = 30000;
+
 type NewLog = Omit<LogEntry, 'id'>;
 const MAX_LOGS = 300;
 
+export type Connection = 'connecting' | 'online' | 'offline';
+export type WarningsState = 'loading' | 'ready' | 'error';
+
+/** API work the reducer asks for; run by the effect runner in DispatchProvider. */
+type Effect =
+  | { id: number; kind: 'complete'; record: CallRecord }
+  | { id: number; kind: 'release'; incidentId: string; assignmentId: string; callSign: string };
+type NewEffect = Effect extends infer E ? (E extends Effect ? Omit<E, 'id'> : never) : never;
+
 interface State {
   now: number;
-  units: Unit[];
-  notices: EmergencyNotice[];
+  serverUnits: Unit[];                    // as the API last reported them
+  units: Unit[];                          // serverUnits + local animation status
+  notices: EmergencyNotice[];             // open incidents
   dispatches: ActiveDispatch[];
-  selectedNoticeId: number | null;
-  selectedUnitId: number | null;
+  selectedNoticeId: string | null;
+  selectedUnitId: string | null;
   hospitals: HospitalTally[];
   logs: LogEntry[];                       // newest first
-  records: CallRecord[];                  // finished calls
-  responders: Record<number, string[]>;   // call sign list per call
-  seenWarningIds: number[];
+  records: CallRecord[];                  // finished calls (this session)
+  responders: Record<string, string[]>;   // call sign list per incident
+  knownNoticeIds: string[] | null;        // null until the first successful load
+  closingIds: string[];                   // finished here, waiting for the API to close them
+  seenWarningIds: string[];
+  warnings: WeatherWarning[];
+  warningsState: WarningsState;
+  warningsError: string | null;
+  connection: Connection;
+  busy: boolean;                          // a send is in progress
+  effects: Effect[];
+  nextEffectId: number;
   nextLogId: number;
 }
 
 type Action =
   | { type: 'TICK'; now: number }
-  | { type: 'ADD_NOTICE'; notice: EmergencyNotice }
-  | { type: 'SELECT_NOTICE'; id: number | null }
-  | { type: 'SELECT_UNIT'; id: number | null }
-  | { type: 'SEND'; now: number; dispatchId: number; travelMs: number; dwellMs: number }
+  | { type: 'SYNC'; now: number; units: Unit[]; notices: EmergencyNotice[]; hospitals: HospitalTally[] }
+  | { type: 'CONNECTION_LOST'; now: number; message: string }
+  | { type: 'WARNINGS'; now: number; warnings: WeatherWarning[] }
+  | { type: 'WARNINGS_FAILED'; message: string }
+  | { type: 'SELECT_NOTICE'; id: string | null }
+  | { type: 'SELECT_UNIT'; id: string | null }
+  | { type: 'SEND'; now: number; dispatchId: number; travelMs: number; dwellMs: number;
+      notice: EmergencyNotice; unit: Unit; assignmentId: string | null }
   | { type: 'CANCEL'; id: number; now: number }
-  | { type: 'RECEIVE_WARNING'; warning: WeatherWarning; now: number }
+  | { type: 'LOG'; entry: NewLog }
+  | { type: 'BUSY'; busy: boolean }
+  | { type: 'EFFECTS_TAKEN'; ids: number[] }
   | { type: 'CLEAR_LOG' };
 
 // Adds entries (given oldest -> newest) to the top of the log
@@ -51,6 +85,13 @@ function withLogs(state: State, entries: NewLog[]): State {
   };
 }
 
+function withEffects(state: State, effects: NewEffect[]): State {
+  if (effects.length === 0) return state;
+  let id = state.nextEffectId;
+  const added = effects.map((e) => ({ ...e, id: id++ }) as Effect);
+  return { ...state, nextEffectId: id, effects: [...state.effects, ...added] };
+}
+
 function noticeLog(n: EmergencyNotice): NewLog {
   return {
     time: n.createdAt,
@@ -58,6 +99,17 @@ function noticeLog(n: EmergencyNotice): NewLog {
     category: 'call',
     message: `New call: ${n.title} at ${n.locationLabel}`,
     details: [`${SEVERITY_LABEL[n.severity]} · ${n.incidentType} · needs ${n.requiredUnitType}`],
+  };
+}
+
+function warningLog(w: WeatherWarning, now: number): NewLog {
+  const until = parseUtc(w.endsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return {
+    time: now,
+    level: w.severity === 'Warning' ? 'danger' : w.severity === 'Watch' ? 'warning' : 'info',
+    category: 'weather',
+    message: `Weather ${w.severity.toLowerCase()}: ${w.type}, ${w.area}`,
+    details: [`In effect until ${until}${w.affectsTransit ? ' · affects transit' : ''}`],
   };
 }
 
@@ -82,24 +134,76 @@ function advance(d: ActiveDispatch, now: number) {
   }
 }
 
-// A unit is Available only when it has no dispatch
-function syncUnits(units: Unit[], dispatches: ActiveDispatch[]): Unit[] {
-  return units.map((u) => {
+// A unit that is out on a local dispatch shows the animation's status;
+// otherwise it shows what the API says (e.g. sent by another dispatcher).
+function syncUnits(serverUnits: Unit[], dispatches: ActiveDispatch[]): Unit[] {
+  return serverUnits.map((u) => {
     const d = dispatches.find((x) => x.unitId === u.id);
-    const status: UnitStatus = d
-      ? d.phase === 'onScene' ? 'On Scene' : 'Dispatched'
-      : u.status === 'Out of Service' ? 'Out of Service' : 'Available';
+    if (!d) return u;
+    const status: UnitStatus = d.phase === 'onScene' ? 'OnScene' : 'Dispatched';
     return status === u.status ? u : { ...u, status };
   });
 }
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
-    case 'ADD_NOTICE':
-      return withLogs(
-        { ...state, notices: [...state.notices, action.notice] },
-        [noticeLog(action.notice)],
+    case 'SYNC': {
+      const open = action.notices.filter(
+        (n) => OPEN_STATUSES.includes(n.status) && !state.closingIds.includes(n.id),
       );
+      const logs: NewLog[] = [];
+      if (state.knownNoticeIds === null) {
+        logs.push({ time: action.now, level: 'info', category: 'system', message: 'Dispatch console online' });
+        logs.push(...open.map(noticeLog));
+      } else {
+        if (state.connection === 'offline') {
+          logs.push({ time: action.now, level: 'success', category: 'system', message: 'Connection to the API restored' });
+        }
+        logs.push(...open.filter((n) => !state.knownNoticeIds!.includes(n.id)).map(noticeLog));
+      }
+      const serverIds = new Set(action.notices.map((n) => n.id));
+      const deaths = new Map(state.hospitals.map((h) => [h.id, h]));
+      return withLogs(
+        {
+          ...state,
+          now: action.now,
+          connection: 'online',
+          serverUnits: action.units,
+          units: syncUnits(action.units, state.dispatches),
+          notices: open,
+          hospitals: action.hospitals.map((h) => ({ ...h, deaths: deaths.get(h.id)?.deaths ?? h.deaths })),
+          knownNoticeIds: [...new Set([...(state.knownNoticeIds ?? []), ...open.map((n) => n.id)])],
+          closingIds: state.closingIds.filter((id) => serverIds.has(id)),
+          selectedNoticeId: open.some((n) => n.id === state.selectedNoticeId) ? state.selectedNoticeId : null,
+          selectedUnitId: action.units.some((u) => u.id === state.selectedUnitId) ? state.selectedUnitId : null,
+        },
+        logs,
+      );
+    }
+
+    case 'CONNECTION_LOST':
+      if (state.connection === 'offline') return state; // log it once, not every poll
+      return withLogs({ ...state, connection: 'offline' }, [{
+        time: action.now, level: 'danger', category: 'system',
+        message: 'Lost connection to the Emergency API', details: [action.message],
+      }]);
+
+    case 'WARNINGS': {
+      const fresh = action.warnings.filter((w) => !state.seenWarningIds.includes(w.id));
+      return withLogs(
+        {
+          ...state,
+          warnings: action.warnings,
+          warningsState: 'ready',
+          warningsError: null,
+          seenWarningIds: [...state.seenWarningIds, ...fresh.map((w) => w.id)],
+        },
+        fresh.map((w) => warningLog(w, action.now)),
+      );
+    }
+
+    case 'WARNINGS_FAILED':
+      return { ...state, warningsState: state.warningsState === 'ready' ? 'ready' : 'error', warningsError: action.message };
 
     case 'SELECT_NOTICE':
       return { ...state, selectedNoticeId: action.id };
@@ -113,13 +217,11 @@ function reducer(state: State, action: Action): State {
     }
 
     case 'SEND': {
-      const notice = state.notices.find((n) => n.id === state.selectedNoticeId);
-      const unit = state.units.find((u) => u.id === state.selectedUnitId);
-      if (!notice || !unit || !unit.active || unit.status !== 'Available') return state;
-      const { travelMs } = action;
+      const { notice, unit, travelMs } = action;
       const dispatch: ActiveDispatch = {
         id: action.dispatchId,
         unitId: unit.id,
+        assignmentId: action.assignmentId,
         callSign: unit.callSign,
         unitType: unit.type,
         startLabel: unit.homeStation,
@@ -138,7 +240,8 @@ function reducer(state: State, action: Action): State {
         {
           ...state,
           dispatches,
-          units: syncUnits(state.units, dispatches),
+          units: syncUnits(state.serverUnits, dispatches),
+          notices: state.notices.map((n) => (n.id === notice.id ? { ...n, status: 'EnRoute' } : n)),
           selectedUnitId: null, // keep the destination so you can send more units
           responders: {
             ...state.responders,
@@ -173,17 +276,24 @@ function reducer(state: State, action: Action): State {
               returnFromProgress: from,
             },
       );
-      return withLogs(
-        { ...state, dispatches, units: syncUnits(state.units, dispatches) },
-        [{
-          time: action.now,
-          level: 'warning',
-          category: 'unit',
-          message: `${target.callSign} recalled to ${target.startLabel}`,
-          details: [
-            `Cancelled while ${target.phase === 'onScene' ? 'on scene' : 'en route'} at ${target.endLabel}`,
-          ],
-        }],
+      const release: NewEffect[] =
+        target.assignmentId && target.noticeId && state.notices.some((n) => n.id === target.noticeId)
+          ? [{ kind: 'release', incidentId: target.noticeId, assignmentId: target.assignmentId, callSign: target.callSign }]
+          : [];
+      return withEffects(
+        withLogs(
+          { ...state, dispatches, units: syncUnits(state.serverUnits, dispatches) },
+          [{
+            time: action.now,
+            level: 'warning',
+            category: 'unit',
+            message: `${target.callSign} recalled to ${target.startLabel}`,
+            details: [
+              `Cancelled while ${target.phase === 'onScene' ? 'on scene' : 'en route'} at ${target.endLabel}`,
+            ],
+          }],
+        ),
+        release,
       );
     }
 
@@ -192,8 +302,10 @@ function reducer(state: State, action: Action): State {
       let notices = state.notices;
       let hospitals = state.hospitals;
       let records = state.records;
+      let closingIds = state.closingIds;
       const dispatches: ActiveDispatch[] = [];
       const logs: NewLog[] = [];
+      const effects: NewEffect[] = [];
 
       for (const d of state.dispatches) {
         const result = advance(d, action.now);
@@ -242,6 +354,8 @@ function reducer(state: State, action: Action): State {
             };
             records = [...records, record];
             notices = notices.filter((n) => n.id !== notice.id);
+            closingIds = [...closingIds, notice.id];
+            effects.push({ kind: 'complete', record }); // On Scene -> Resolved -> report (closes it)
             logs.push(buildCompletionLog(record));
           } else if (notice) {
             logs.push({
@@ -257,43 +371,44 @@ function reducer(state: State, action: Action): State {
             time: action.now, level: 'info', category: 'unit',
             message: `${d.callSign} back at ${d.startLabel}, available`,
           });
+          // Came home while its call is still open (wrong unit type): free it in the API too.
+          if (d.assignmentId && d.noticeId && notices.some((n) => n.id === d.noticeId)) {
+            effects.push({ kind: 'release', incidentId: d.noticeId, assignmentId: d.assignmentId, callSign: d.callSign });
+          }
         }
       }
 
       // Nothing moved: only the clock changes
       if (!changed) return { ...state, now: action.now };
-      return withLogs(
-        {
-          ...state,
-          now: action.now,
-          dispatches,
-          notices,
-          hospitals,
-          records,
-          units: syncUnits(state.units, dispatches),
-          selectedNoticeId: notices.some((n) => n.id === state.selectedNoticeId)
-            ? state.selectedNoticeId
-            : null,
-        },
-        logs,
+      return withEffects(
+        withLogs(
+          {
+            ...state,
+            now: action.now,
+            dispatches,
+            notices,
+            hospitals,
+            records,
+            closingIds,
+            units: syncUnits(state.serverUnits, dispatches),
+            selectedNoticeId: notices.some((n) => n.id === state.selectedNoticeId)
+              ? state.selectedNoticeId
+              : null,
+          },
+          logs,
+        ),
+        effects,
       );
     }
 
-    case 'RECEIVE_WARNING': {
-      const w = action.warning;
-      if (state.seenWarningIds.includes(w.id)) return state; // log each warning once
-      const until = parseUtc(w.endsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      return withLogs(
-        { ...state, seenWarningIds: [...state.seenWarningIds, w.id] },
-        [{
-          time: action.now,
-          level: w.severity === 'Warning' ? 'danger' : w.severity === 'Watch' ? 'warning' : 'info',
-          category: 'weather',
-          message: `Weather ${w.severity.toLowerCase()}: ${w.type}, ${w.area}`,
-          details: [`In effect until ${until}${w.affectsTransit ? ' · affects transit' : ''}`],
-        }],
-      );
-    }
+    case 'LOG':
+      return withLogs(state, [action.entry]);
+
+    case 'BUSY':
+      return { ...state, busy: action.busy };
+
+    case 'EFFECTS_TAKEN':
+      return { ...state, effects: state.effects.filter((e) => !action.ids.includes(e.id)) };
 
     case 'CLEAR_LOG':
       return { ...state, logs: [] };
@@ -301,28 +416,53 @@ function reducer(state: State, action: Action): State {
 }
 
 function createInitialState(): State {
-  const notices = [makeNotice(1), makeNotice(2)];
-  return withLogs(
-    {
-      now: Date.now(),
-      units: INITIAL_UNITS,
-      notices,
-      dispatches: [],
-      selectedNoticeId: null,
-      selectedUnitId: null,
-      hospitals: INITIAL_HOSPITALS,
-      logs: [],
-      records: [],
-      responders: {},
-      seenWarningIds: [],
-      nextLogId: 1,
-    },
-    [
-      { time: Date.now(), level: 'info', category: 'system', message: 'Dispatch console online' },
-      ...notices.map(noticeLog),
-    ],
-  );
+  return {
+    now: Date.now(),
+    serverUnits: [],
+    units: [],
+    notices: [],
+    dispatches: [],
+    selectedNoticeId: null,
+    selectedUnitId: null,
+    hospitals: [],
+    logs: [],
+    records: [],
+    responders: {},
+    knownNoticeIds: null,
+    closingIds: [],
+    seenWarningIds: [],
+    warnings: [],
+    warningsState: 'loading',
+    warningsError: null,
+    connection: 'connecting',
+    busy: false,
+    effects: [],
+    nextEffectId: 1,
+    nextLogId: 1,
+  };
 }
+
+/** Runs an API call, treating the listed HTTP statuses as "fine, nothing to do". */
+async function tolerate(call: () => Promise<unknown>, okStatuses: number[]): Promise<void> {
+  try {
+    await call();
+  } catch (e) {
+    if (e instanceof ApiError && okStatuses.includes(e.status)) return;
+    throw e;
+  }
+}
+
+/** Some roles may not read every list (e.g. Responders can't list units): show it empty instead of failing. */
+async function ifAllowed<T>(call: Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await call;
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 403) return fallback;
+    throw e;
+  }
+}
+
+const messageOf = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 interface DispatchStore {
   now: number;
@@ -332,15 +472,20 @@ interface DispatchStore {
   hospitals: HospitalTally[];
   logs: LogEntry[];
   records: CallRecord[];
-  selectedNoticeId: number | null;
-  selectedUnitId: number | null;
-  selectNotice: (id: number | null) => void;
-  selectUnit: (id: number | null) => void;
-  sendSelected: () => void;
+  warnings: WeatherWarning[];
+  warningsState: WarningsState;
+  warningsError: string | null;
+  connection: Connection;
+  busy: boolean;
+  selectedNoticeId: string | null;
+  selectedUnitId: string | null;
+  selectNotice: (id: string | null) => void;
+  selectUnit: (id: string | null) => void;
+  sendSelected: () => Promise<void>;
   cancelDispatch: (id: number) => void;
-  addTestNotice: () => void;
-  receiveWarning: (warning: WeatherWarning) => void;
-  addTestWarning: () => void;
+  addTestNotice: () => Promise<void>;
+  addTestWarning: () => Promise<void>;
+  refresh: () => Promise<void>;
   clearLog: () => void;
 }
 
@@ -348,39 +493,172 @@ const DispatchContext = createContext<DispatchStore | null>(null);
 
 export function DispatchProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, null, createInitialState);
-  const nextNoticeId = useRef(3);
+  const stateRef = useRef(state);
   const nextDispatchId = useRef(1);
-  const nextWarningId = useRef(1);
+  const handledEffects = useRef(new Set<number>());
 
-  // One clock for everything: updates timers and advances phases
   useEffect(() => {
-    const timer = setInterval(() => dispatch({ type: 'TICK', now: Date.now() }), 1000);
-    return () => clearInterval(timer);
+    stateRef.current = state;
+  }, [state]);
+
+  const log = useCallback((entry: Omit<NewLog, 'time'>) =>
+    dispatch({ type: 'LOG', entry: { time: Date.now(), ...entry } }), []);
+
+  // ---------- Loading from the API ----------
+
+  const refresh = useCallback(async () => {
+    try {
+      const [units, stations, incidents, hospitals] = await Promise.all([
+        ifAllowed(emergencyApi.listUnits(), { items: [], page: 1, pageSize: 0, totalCount: 0 }),
+        ifAllowed(emergencyApi.listStations(), []),
+        ifAllowed(emergencyApi.listOpenIncidents(), { items: [], page: 1, pageSize: 0, totalCount: 0 }),
+        ifAllowed(emergencyApi.listHospitals(), []),
+      ]);
+      const stationNames = new Map(stations.map((s) => [s.id, s.name]));
+      dispatch({
+        type: 'SYNC',
+        now: Date.now(),
+        units: units.items.map((u) => toUnit(u, stationNames)),
+        notices: incidents.items.map(toNotice),
+        hospitals: hospitals.map((h) => toHospital(h)),
+      });
+    } catch (e) {
+      dispatch({ type: 'CONNECTION_LOST', now: Date.now(), message: messageOf(e) });
+    }
   }, []);
 
-  const selectNotice = (id: number | null) => dispatch({ type: 'SELECT_NOTICE', id });
-  const selectUnit = (id: number | null) => dispatch({ type: 'SELECT_UNIT', id });
+  const loadWarnings = useCallback(async () => {
+    try {
+      const list = await emergencyApi.activeWarnings();
+      dispatch({ type: 'WARNINGS', now: Date.now(), warnings: list.map(toWarning) });
+    } catch (e) {
+      dispatch({ type: 'WARNINGS_FAILED', message: messageOf(e) });
+    }
+  }, []);
 
-  // Randomness is picked here, not in the reducer, so the reducer stays pure
-  const sendSelected = () =>
-    dispatch({
-      type: 'SEND',
-      now: Date.now(),
-      dispatchId: nextDispatchId.current++,
-      travelMs: estimateTravelMs(),
-      dwellMs: (8 + Math.floor(Math.random() * 13)) * 1000, // random 8-20 s on scene
-    });
+  useEffect(() => {
+    void refresh();
+    void loadWarnings();
+    const data = setInterval(() => void refresh(), DATA_POLL_MS);
+    const weather = setInterval(() => void loadWarnings(), WARNING_POLL_MS);
+    const clock = setInterval(() => dispatch({ type: 'TICK', now: Date.now() }), 1000);
+    return () => {
+      clearInterval(data);
+      clearInterval(weather);
+      clearInterval(clock);
+    };
+  }, [refresh, loadWarnings]);
+
+  // ---------- API work requested by the reducer ----------
+
+  useEffect(() => {
+    const fresh = state.effects.filter((e) => !handledEffects.current.has(e.id));
+    if (fresh.length === 0) return;
+    fresh.forEach((e) => handledEffects.current.add(e.id));
+    dispatch({ type: 'EFFECTS_TAKEN', ids: fresh.map((e) => e.id) });
+
+    for (const effect of fresh) {
+      void (async () => {
+        try {
+          if (effect.kind === 'complete') {
+            const r = effect.record;
+            // 409 = already in that status (e.g. another dispatcher moved it on).
+            await tolerate(() => emergencyApi.changeStatus(r.noticeId, 'OnScene'), [409]);
+            await tolerate(() => emergencyApi.changeStatus(r.noticeId, 'Resolved'), [409]);
+            try {
+              await emergencyApi.fileReport(r.noticeId, {
+                outcome: r.successful ? 'Successful' : 'Unsuccessful',
+                injuries: 0,
+                deaths: r.deaths,
+                hydrantWaterLitres: 0,
+                notes: `Units: ${r.responders.join(', ')}. Response time ${formatDuration(r.responseMs)}.`,
+              });
+            } catch (e) {
+              if (e instanceof ApiError && e.status === 403) {
+                log({
+                  level: 'warning', category: 'call',
+                  message: `${r.title} is resolved; a Responder or Admin must file the after-action report to close it`,
+                });
+              } else if (!(e instanceof ApiError && e.status === 409)) { // 409 = already reported
+                throw e;
+              }
+            }
+          } else {
+            // 404/409 = already released (e.g. the incident was closed).
+            await tolerate(() => emergencyApi.releaseAssignment(effect.incidentId, effect.assignmentId), [404, 409]);
+          }
+        } catch (e) {
+          log({
+            level: 'danger', category: 'system',
+            message: effect.kind === 'complete'
+              ? `Could not close "${effect.record.title}" in the system`
+              : `Could not release ${effect.callSign} in the system`,
+            details: [messageOf(e)],
+          });
+        } finally {
+          void refresh();
+        }
+      })();
+    }
+  }, [state.effects, log, refresh]);
+
+  // ---------- User actions ----------
+
+  const selectNotice = (id: string | null) => dispatch({ type: 'SELECT_NOTICE', id });
+  const selectUnit = (id: string | null) => dispatch({ type: 'SELECT_UNIT', id });
+
+  const sendSelected = async () => {
+    const s = stateRef.current;
+    const notice = s.notices.find((n) => n.id === s.selectedNoticeId);
+    const unit = s.units.find((u) => u.id === s.selectedUnitId);
+    if (s.busy || !notice || !unit || !unit.active || unit.status !== 'Available') return;
+
+    dispatch({ type: 'BUSY', busy: true });
+    try {
+      const assignments = await emergencyApi.assignUnits(notice.id, [unit.id]);
+      // Dispatched -> En Route. 409 = it is already en route (another unit went first).
+      await tolerate(() => emergencyApi.changeStatus(notice.id, 'EnRoute'), [409]);
+      dispatch({
+        type: 'SEND',
+        now: Date.now(),
+        dispatchId: nextDispatchId.current++,
+        travelMs: estimateTravelMs(),
+        dwellMs: (8 + Math.floor(Math.random() * 13)) * 1000, // random 8-20 s on scene
+        notice,
+        unit,
+        assignmentId: assignments[0]?.id ?? null,
+      });
+    } catch (e) {
+      log({
+        level: 'danger', category: 'unit',
+        message: `Could not send ${unit.callSign} to ${notice.locationLabel}`,
+        details: [messageOf(e)],
+      });
+    } finally {
+      dispatch({ type: 'BUSY', busy: false });
+      void refresh();
+    }
+  };
 
   const cancelDispatch = (id: number) => dispatch({ type: 'CANCEL', id, now: Date.now() });
 
-  const addTestNotice = () =>
-    dispatch({ type: 'ADD_NOTICE', notice: makeNotice(nextNoticeId.current++) });
+  const addTestNotice = async () => {
+    try {
+      await emergencyApi.createIncident(makeTestIncident());
+      await refresh();
+    } catch (e) {
+      log({ level: 'danger', category: 'call', message: 'Could not create a test call', details: [messageOf(e)] });
+    }
+  };
 
-  // Later, a polling hook will call this for each warning from the server
-  const receiveWarning = (warning: WeatherWarning) =>
-    dispatch({ type: 'RECEIVE_WARNING', warning, now: Date.now() });
-
-  const addTestWarning = () => receiveWarning(makeWarning(nextWarningId.current++));
+  const addTestWarning = async () => {
+    try {
+      await emergencyApi.simulateWarning();
+      await loadWarnings();
+    } catch (e) {
+      log({ level: 'danger', category: 'weather', message: 'Could not create a test warning', details: [messageOf(e)] });
+    }
+  };
 
   const clearLog = () => dispatch({ type: 'CLEAR_LOG' });
 
@@ -394,10 +672,15 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
         hospitals: state.hospitals,
         logs: state.logs,
         records: state.records,
+        warnings: state.warnings,
+        warningsState: state.warningsState,
+        warningsError: state.warningsError,
+        connection: state.connection,
+        busy: state.busy,
         selectedNoticeId: state.selectedNoticeId,
         selectedUnitId: state.selectedUnitId,
         selectNotice, selectUnit, sendSelected, cancelDispatch, addTestNotice,
-        receiveWarning, addTestWarning, clearLog,
+        addTestWarning, refresh, clearLog,
       }}
     >
       {children}

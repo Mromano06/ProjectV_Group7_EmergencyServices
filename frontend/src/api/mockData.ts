@@ -1,74 +1,45 @@
-import type {
-  EmergencyNotice,
-  HospitalTally, 
-  IncidentType, 
-  Severity,
-  Unit, 
-  UnitType,
-  WarningSeverity, 
-  WeatherWarning,
-} from '../types/models';
-
-
-function unit(id: number, callSign: string, type: UnitType, homeStation: string): Unit {
-  return { id, callSign, type, homeStation, status: 'Available', active: true };
-}
-
-export const INITIAL_UNITS: Unit[] = [
-  unit(1, 'FireTruck 1', 'FireTruck', 'Station 1'),
-  unit(2, 'Ladder 2', 'Ladder', 'Station 4'),
-  unit(3, 'FireTruck 1', 'FireTruck', 'Station 1'),
-  unit(4, 'FireTruck 3', 'FireTruck', 'Station 3'),
-  unit(5, 'Medic 2', 'Ambulance', 'Station 2'),
-  unit(6, 'Medic 5', 'Ambulance', 'Station 5'),
-];
+// Random test calls for the "+ Test call" button. They are created as REAL incidents through
+// POST /incidents, exactly like a call forwarded by Security, so the whole flow is exercised.
+// (Units, stations and hospitals now come from the API – see backend/Data/SeedData.cs.)
+import type { CreateIncidentBody } from './emergencyApi';
+import type { IncidentType, Severity } from '../types/models';
 
 interface Template {
   title: string;
   incidentType: IncidentType;
   severity: Severity;
-  requiredUnitType: UnitType;
 }
 
+// The unit type each call needs comes from its incident type (requiredUnitTypeFor):
+// Fire -> Engine, Medical -> Ambulance, Rescue -> Ladder.
 const TEMPLATES: Template[] = [
-  { title: 'Structure fire', incidentType: 'Fire', severity: 1, requiredUnitType: 'FireTruck' },
-  { title: 'High-rise fire', incidentType: 'Fire', severity: 1, requiredUnitType: 'FireTruck' },
-  { title: 'Cardiac arrest', incidentType: 'Medical', severity: 1, requiredUnitType: 'Ambulance' },
-  { title: 'Vehicle collision', incidentType: 'Rescue', severity: 2, requiredUnitType: 'Ambulance' },
-  { title: 'Cat stuck in tree', incidentType: 'Rescue', severity: 4, requiredUnitType: 'Ladder' },
+  { title: 'Structure fire', incidentType: 'Fire', severity: 1 },
+  { title: 'High-rise fire', incidentType: 'Fire', severity: 1 },
+  { title: 'Cardiac arrest', incidentType: 'Medical', severity: 1 },
+  { title: 'Vehicle collision', incidentType: 'Medical', severity: 2 },
+  { title: 'Cat stuck in tree', incidentType: 'Rescue', severity: 4 },
 ];
 
+// Made-up Cambridge, ON addresses with real-ish coordinates (needed for nearest-unit suggestions).
 const LOCATIONS = [
-  '210 King St', '55 Oak Ave', '9 Elm Rd', '480 Queen Blvd', '12 Mill Lane', '1 Harbour Way',
+  { address: '210 King St, Cambridge', latitude: 43.3615, longitude: -80.3140 },
+  { address: '55 Oak Ave, Cambridge', latitude: 43.3880, longitude: -80.3290 },
+  { address: '9 Elm Rd, Cambridge', latitude: 43.4100, longitude: -80.3050 },
+  { address: '480 Queen Blvd, Cambridge', latitude: 43.3720, longitude: -80.3410 },
+  { address: '12 Mill Lane, Cambridge', latitude: 43.3960, longitude: -80.2900 },
+  { address: '1 Harbour Way, Cambridge', latitude: 43.4230, longitude: -80.3330 },
 ];
 
 const pick = <T,>(list: T[]): T => list[Math.floor(Math.random() * list.length)];
 
-export function makeNotice(id: number): EmergencyNotice {
+export function makeTestIncident(): CreateIncidentBody {
   const t = pick(TEMPLATES);
-  return { id, ...t, locationLabel: pick(LOCATIONS), createdAt: Date.now() };
-}
-
-export const INITIAL_HOSPITALS: HospitalTally[] = [
-  { id: 1, name: 'General Hospital', erStatus: 'Open', deaths: 0 },
-  { id: 2, name: "St. Mary's", erStatus: 'Open', deaths: 0 },
-  { id: 3, name: 'Riverside Medical', erStatus: 'Diverting', deaths: 0 },
-];
-
-const WARNING_TYPES = ['Snowfall', 'Freezing Rain', 'Thunderstorm', 'Flash Flood', 'Extreme Cold'];
-const WARNING_SEVERITIES: WarningSeverity[] = ['Statement', 'Advisory', 'Watch', 'Warning'];
-const WARNING_AREAS = ['City-wide', 'North end', 'Harbour district', 'East side', 'Downtown'];
-
-export function makeWarning(n: number): WeatherWarning {
-  const now = Date.now();
   return {
-    id: n,
-    type: pick(WARNING_TYPES),
-    severity: pick(WARNING_SEVERITIES),
-    area: pick(WARNING_AREAS),
-    startsAt: new Date(now).toISOString(),
-    endsAt: new Date(now + 2 * 60 * 60 * 1000).toISOString(),
-    status: 'Active',
-    affectsTransit: Math.random() < 0.5,
+    type: t.incidentType,
+    severity: t.severity,
+    location: pick(LOCATIONS),
+    description: t.title,
+    callerName: 'Test caller',
+    callerPhone: '519-555-0100',
   };
 }

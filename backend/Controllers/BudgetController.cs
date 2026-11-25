@@ -29,22 +29,44 @@ public sealed class BudgetController(BudgetFinanceClient client) : ControllerBas
     }
 
     /// <summary>
-    /// Request to create a new expenses report
+    /// Sends an expense statement (equipment, overtime, fuel…) to Budget for our department (EMS).
+    /// 200 = approved; 400 = Budget refused it (e.g. over budget) with Budget's reason.
     /// </summary>
-    /// <param name="request">request body</param>
+    /// <param name="request">amount and description</param>
     /// <param name="ct">token</param>
-    /// <returns></returns>
     [HttpPost("expenses")]
     [Authorize(Roles = "emergency:Admin")]
-    public async Task<IActionResult> Expense(ExpenseRequest request, CancellationToken ct)
+    public async Task<IActionResult> Expense(EmergencyExpenseRequest request, CancellationToken ct)
     {
-        // DepartmentCode, Amount and Description are validated by the [Required]/[Range]
-        // attributes on ExpenseRequest (Budget's contract), so no extra checks are needed here.
-        try { return Ok(await client.SubmitExpenseAsync(request, ct)); }
+        if (decimal.Round(request.Amount, 2) != request.Amount)
+            return BadRequest(new ErrorResponse("invalid_amount", "Amount can have at most 2 decimals (cents).", HttpContext.TraceIdentifier));
+        var body = new ExpenseRequest(BudgetFinanceClient.DepartmentCode, request.Amount, request.Description.Trim());
+        try { return Ok(await client.SubmitExpenseAsync(body, ct)); }
         catch (ExternalServiceException ex) { return Fail(ex); }
     }
 
-    ///<summary>Dto error handling </summary> 
+    /// <summary>
+    /// Asks Budget for more money (BF-07). Urgent Emergency requests are reviewed first.
+    /// </summary>
+    /// <param name="request">amount, reason and whether it is urgent</param>
+    /// <param name="ct">token</param>
+    [HttpPost("funding-requests")]
+    [Authorize(Roles = "emergency:Admin")]
+    public async Task<IActionResult> RequestFunding(FundingRequest request, CancellationToken ct)
+    {
+        if (decimal.Round(request.Amount, 2) != request.Amount)
+            return BadRequest(new ErrorResponse("invalid_amount", "Amount can have at most 2 decimals (cents).", HttpContext.TraceIdentifier));
+        var body = new BudgetFundingRequest(BudgetFinanceClient.DepartmentCode, request.Amount,
+            request.Reason.Trim(), request.Urgent);
+        try { return Ok(await client.SubmitFundingRequestAsync(body, ct)); }
+        catch (ExternalServiceException ex) { return Fail(ex); }
+    }
+
+    /// <summary>
+    /// Budget said no (4xx) -> "budget_rejected" with Budget's reason;
+    /// Budget broken or unreachable (5xx) -> "budget_unavailable".
+    /// </summary>
     private ObjectResult Fail(ExternalServiceException ex) => StatusCode(ex.HttpStatus,
-        new ErrorResponse("budget_unavailable", ex.Message, Activity.Current?.Id ?? HttpContext.TraceIdentifier));
+        new ErrorResponse(ex.HttpStatus < 500 ? "budget_rejected" : "budget_unavailable", ex.Message,
+            Activity.Current?.Id ?? HttpContext.TraceIdentifier));
 }

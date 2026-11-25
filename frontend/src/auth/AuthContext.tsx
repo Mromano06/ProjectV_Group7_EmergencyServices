@@ -1,21 +1,21 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
+import { getApiToken } from '../api/apiClient';
 import type { Role } from '../types/models';
-
-interface AuthUser {
-  name: string;
-  role: Role;
-}
+import { userFromToken, type AuthUser } from './token';
 
 interface AuthContextValue {
   user: AuthUser;
-  setRole: (role: Role) => void; // mock only, for testing
+  setRole: (role: Role) => void; // for tests
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [role, setRole] = useState<Role>('Dispatcher');
-  const user: AuthUser = { name: 'Test User', role };
+export function AuthProvider({ children, initialRole }: { children: ReactNode; initialRole?: Role }) {
+  const [user, setUser] = useState<AuthUser>(() => {
+    const fromToken = userFromToken(getApiToken());
+    return initialRole ? { ...fromToken, role: initialRole } : fromToken;
+  });
+  const setRole = (role: Role) => setUser((u) => ({ ...u, role }));
 
   return (
     <AuthContext.Provider value={{ user, setRole }}>

@@ -1,56 +1,36 @@
-// import { useAuth } from './auth/AuthContext';
+import { useAuth } from './auth/AuthContext';
 import AvailableUnits from './components/AvailableUnitPanel';
 import DispatchTracker from './components/DispatchTracker';
 import NotificationsPanel from './components/NotificationPanel';
 import LogPanel from './components/LogPanel';
-// import type { Role } from './types/models';
-
-// const ROLES: Role[] = ['Dispatcher', 'Admin', 'Viewer'];
-import { useEffect, useState } from 'react'
+import { useDispatchStore, type Connection } from './state/DispatchContext';
+import { parseUtc } from './utils/Labels';
 import './App.css'
-import { getApiData } from './api/apiClient'
 
-type WeatherWarning = {
-  id: string
-  type: string
-  severity: string
-  area: string
-  description: string | null
-  startsAt: string
-  endsAt: string
-  status: string
-  source: string
-  affectsTransit: boolean
-}
+const CONNECTION_LABEL: Record<Connection, string> = {
+  connecting: 'Connecting to the API…',
+  online: 'Live – updates every 5 seconds',
+  offline: 'Offline – retrying',
+};
 
 function App() {
-  const [warnings, setWarnings] = useState<WeatherWarning[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    getApiData<WeatherWarning[]>(
-      '/api/emergency/v1/weather-warnings?active=true',
-    )
-      .then(setWarnings)
-      .catch((requestError: Error) => {
-        setError(requestError.message)
-      })
-      .finally(() => {
-        setLoading(false)
-      })
-  }, [])
+  const { user } = useAuth();
+  const { warnings, warningsState, warningsError, connection } = useDispatchStore();
 
   return (
     <main className="app">
       <h1>Emergency Services</h1>
+      <p className={`message connection-${connection}`} role="status">
+        {CONNECTION_LABEL[connection]} · Signed in as {user.name} ({user.role})
+      </p>
+
       <h2>Active Weather Warnings</h2>
 
-      {loading ? (
+      {warningsState === 'loading' ? (
         <p className="message">Loading weather warnings...</p>
-      ) : error ? (
+      ) : warningsState === 'error' ? (
         <p className="message error">
-          Could not load warnings: {error}
+          Could not load warnings: {warningsError}
         </p>
       ) : warnings.length === 0 ? (
         <p className="message">No active warnings.</p>
@@ -80,12 +60,14 @@ function App() {
 
               <p>
                 <strong>Ends:</strong>{' '}
-                {new Date(warning.endsAt).toLocaleString()}
+                {parseUtc(warning.endsAt).toLocaleString()}
               </p>
 
-              <p>
-                <strong>Source:</strong> {warning.source}
-              </p>
+              {warning.source && (
+                <p>
+                  <strong>Source:</strong> {warning.source}
+                </p>
+              )}
 
               {warning.affectsTransit && (
                 <p className="transit-warning">

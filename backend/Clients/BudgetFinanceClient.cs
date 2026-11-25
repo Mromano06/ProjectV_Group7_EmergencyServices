@@ -8,27 +8,23 @@ namespace MyApplication.Api.Clients;
 
 // Matthew Romano - Nov 14th, 2026 - Buudget/Finances Client Connection
 
-/// <summary>ES-FR-025 / SH-C08/09. Budget owns its own data; calls go through the gateway.</summary>
+/// <summary>
+/// ES-FR-025 / SH-C07 / SH-C08 / BF-07. Budget owns its own data; we only call its API.
+/// Contract confirmed by Budget & Finance (Nov 25).
+/// </summary>
 public sealed class BudgetFinanceClient(HttpClient http, IServiceTokenProvider tokens)
 {
-    
-    /// <summary>
-    /// creates and sends a request to budget, and returns the results
-    /// </summary>
-    /// <param name="ct">token</param>
-    /// <returns>response contents (json)</returns>
+    /// <summary>Our department code in Budget's system.</summary>
+    public const string DepartmentCode = "EMS";
+
+    /// <summary>GET /api/budget/v1/allocations/emergency: allocated, spent and remaining in CAD.</summary>
     public async Task<JsonElement> GetAllocationAsync(CancellationToken ct)
     {
         using var request = await CreateRequestAsync(HttpMethod.Get, "api/budget/v1/allocations/emergency", ct);
         return await SendJsonAsync(request, ct);
     }
 
-    /// <summary>
-    /// sends a post request to budget , and returns the results
-    /// </summary>
-    /// <param name="body">request body</param>
-    /// <param name="ct">token</param>
-    /// <returns>reponse contents</returns>
+    /// <summary>POST /api/budget/v1/expenses. Budget answers 201 (approved) or 400 with the reason (over budget).</summary>
     public async Task<JsonElement> SubmitExpenseAsync(ExpenseRequest body, CancellationToken ct)
     {
         using var request = await CreateRequestAsync(HttpMethod.Post, "api/budget/v1/expenses", ct);
@@ -36,18 +32,18 @@ public sealed class BudgetFinanceClient(HttpClient http, IServiceTokenProvider t
         return await SendJsonAsync(request, ct);
     }
 
-    /// <summary>
-    /// asynchronous helper function to generate valid http request
-    /// </summary>
-    /// <param name="method">http method</param>
-    /// <param name="path">http path</param>
-    /// <param name="ct">token</param>
-    /// <returns>request</returns>
-    /// <exception cref="ExternalServiceException"></exception>
+    /// <summary>POST /api/budget/v1/funding-requests: ask for more money (BF-07). Urgent EMS requests go first.</summary>
+    public async Task<JsonElement> SubmitFundingRequestAsync(BudgetFundingRequest body, CancellationToken ct)
+    {
+        using var request = await CreateRequestAsync(HttpMethod.Post, "api/budget/v1/funding-requests", ct);
+        request.Content = JsonContent.Create(body);
+        return await SendJsonAsync(request, ct);
+    }
+
     private async Task<HttpRequestMessage> CreateRequestAsync(HttpMethod method, string path, CancellationToken ct)
     {
         if (http.BaseAddress is null)
-            throw new ExternalServiceException("API gateway URL is not configured.");
+            throw new ExternalServiceException("Budget service URL is not configured.");
         var token = await tokens.GetTokenAsync(ct);
         var request = new HttpRequestMessage(method, path);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -55,25 +51,48 @@ public sealed class BudgetFinanceClient(HttpClient http, IServiceTokenProvider t
     }
 
     /// <summary>
-    /// asynchronous helper function that sends request and gives you back the json results
+    /// Sends the request and returns Budget's JSON.
+    /// Budget saying "no" (400 / 409, e.g. over budget) comes back as that status with Budget's own
+    /// message, so the user sees why. Budget being broken or unreachable becomes 502 / 503 / 504.
     /// </summary>
-    /// <param name="request">http request</param>
-    /// <param name="ct">token</param>
-    /// <returns>json body</returns>
-    /// <exception cref="ExternalServiceException"></exception>
     private async Task<JsonElement> SendJsonAsync(HttpRequestMessage request, CancellationToken ct)
     {
         try
         {
             using var response = await http.SendAsync(request, ct);
+            var text = await response.Content.ReadAsStringAsync(ct);
             if (!response.IsSuccessStatusCode)
-                throw new ExternalServiceException($"Budget service returned HTTP {(int)response.StatusCode}.", 502);
-            if (response.Content.Headers.ContentLength == 0) return JsonDocument.Parse("{}").RootElement.Clone();
-            using var json = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+            {
+                var status = (int)response.StatusCode;
+                if (status is 400 or 409 or 422)
+                    throw new ExternalServiceException(MessageFrom(text) ?? $"Budget refused the request (HTTP {status}).",
+                        status == 409 ? 409 : 400);
+                throw new ExternalServiceException($"Budget service returned HTTP {status}.", 502);
+            }
+            if (string.IsNullOrWhiteSpace(text)) return JsonDocument.Parse("{}").RootElement.Clone();
+            using var json = JsonDocument.Parse(text);
             return json.RootElement.Clone();
         }
         catch (HttpRequestException ex) { throw new ExternalServiceException($"Budget service connection failed: {ex.GetType().Name}."); }
         catch (TaskCanceledException) when (!ct.IsCancellationRequested)
         { throw new ExternalServiceException("Budget service request timed out.", 504); }
+        catch (JsonException) { throw new ExternalServiceException("Budget service sent invalid JSON.", 502); }
+    }
+
+    /// <summary>Budget uses the shared error shape { error, message, traceId } (SH-I03).</summary>
+    private static string? MessageFrom(string body)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            return doc.RootElement.ValueKind == JsonValueKind.Object &&
+                   doc.RootElement.TryGetProperty("message", out var m) && m.ValueKind == JsonValueKind.String
+                ? m.GetString()
+                : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 }

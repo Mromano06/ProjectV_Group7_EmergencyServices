@@ -121,6 +121,44 @@ public class TransitWarningClientTests
         Assert.False(await MakeClient(new UnreachableHandler()).SendWarningNoticeAsync(Notice));
     }
 
+    // ---------- Road-restricting incident notices (ES-FR-015) ----------
+
+    private static readonly TransitIncidentNotice IncidentNotice = new(
+        Guid.NewGuid(), "Fire", 43.36, -80.31, "100 Main St, Cambridge, ON",
+        "Main St between Water and Ainslie", "Full closure", DateTime.UtcNow.AddHours(3), DateTime.UtcNow);
+
+    // TC-TRN-07
+    [Fact]
+    [Trait("Requirement", "ES-FR-015")]
+    public async Task IncidentNotice_GoesToTheEmergencyNoticesPath_WithLocationAreaTypeAndEnd()
+    {
+        var gateway = new FakeGateway();
+        gateway.Respond(HttpMethod.Post, "/" + TransitWarningClient.DefaultIncidentPath, HttpStatusCode.Created);
+
+        var sent = await MakeClient(gateway).SendIncidentNoticeAsync(IncidentNotice);
+
+        Assert.True(sent);
+        var request = Assert.Single(gateway.Requests);
+        Assert.Equal("/api/transit/v1/disruptions/emergency-notices", request.PathAndQuery); // SH-C13
+        Assert.Equal($"Bearer {FakeServiceTokenProvider.Token}", request.Authorization);   // SH-S07
+        Assert.Contains(IncidentNotice.IncidentId.ToString(), request.Body);
+        Assert.Contains("\"latitude\":43.36", request.Body);
+        Assert.Contains("\"affectedArea\":\"Main St between Water and Ainslie\"", request.Body);
+        Assert.Contains("\"restrictionType\":\"Full closure\"", request.Body);
+        Assert.Contains("\"estimatedEndAt\"", request.Body);
+    }
+
+    // TC-TRN-08
+    [Fact]
+    [Trait("Requirement", "SH-A07")]
+    public async Task IncidentNotice_TransitError_ReturnsFalse()
+    {
+        var gateway = new FakeGateway();
+        gateway.Respond(HttpMethod.Post, "/" + TransitWarningClient.DefaultIncidentPath, HttpStatusCode.BadRequest);
+
+        Assert.False(await MakeClient(gateway).SendIncidentNoticeAsync(IncidentNotice));
+    }
+
     private sealed class MissingTokenProvider : IServiceTokenProvider
     {
         public Task<string> GetTokenAsync(CancellationToken ct) =>
@@ -133,4 +171,3 @@ public class TransitWarningClientTests
             throw new HttpRequestException("No such host is known.");
     }
 }
-
