@@ -12,6 +12,7 @@ using MyApplication.Api.Dtos;
 using MyApplication.Api.Health;
 using MyApplication.Api.Auth;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -98,11 +99,14 @@ builder.Services.AddDbContext<EmergencyDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("EmergencyDb")));
 
-// Login / roles (SH-S03)
-// Reads its settings from the "Authentication:Schemes:Bearer" section of appsettings.
-// For local testing, `dotnet user-jwts create` fills that in for you
-// When Registration's real login is ready, put their issuer/key in the same section.
+// Login / roles (SH-S01, SH-S03)
+// Users log in through Registration, which issues the JWT; we validate it on every request.
+// Dev tokens: "Authentication:Schemes:Bearer" settings (`dotnet user-jwts create` fills them in).
+// Registration tokens: the "Registration" settings (issuer, audience, and their public key or secret
+// from .env), added below next to the dev ones. See Auth/RegistrationTokens.cs.
 builder.Services.AddAuthentication().AddJwtBearer();
+builder.Services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme,
+    o => RegistrationTokens.Accept(o.TokenValidationParameters, builder.Configuration));
 
 // Registration's plain roles (Manager, Dispatcher, User) -> our emergency:* roles. See appsettings "RoleMapping".
 builder.Services.AddTransient<IClaimsTransformation, RegistrationRoleMapper>();
@@ -186,6 +190,9 @@ builder.Services.AddScoped<IPatientTransportService, PatientTransportService>();
 
 // Build the application after ALL services have been registered.
 var app = builder.Build();
+
+// Say in the log whether Registration's tokens are accepted (stops here if their public key is invalid).
+app.Logger.LogInformation("{RegistrationTokens}", RegistrationTokens.Describe(app.Configuration));
 
 
 // In Docker, create/update the database tables on startup (set Database__MigrateOnStartup=true).
