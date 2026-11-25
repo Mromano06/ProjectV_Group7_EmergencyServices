@@ -120,8 +120,8 @@ public sealed record IncidentDetailDto(
 /// <param name="IncidentId">id of incident</param>
 /// <param name="HydrantId">id of hydrant used</param>
 /// <param name="LitresUsed">litres of water used</param>
-/// <param name="SentToMaintenanceA">timestamp for maintenance</param>
+/// <param name="SentToMaintenanceAt">when Maintenance accepted it; null if not sent yet</param>
 public sealed record HydrantUsageDto(
-    Guid IncidentId, Guid HydrantId, double LitresUsed, DateTime SentToMaintenanceA
+    Guid IncidentId, Guid HydrantId, double LitresUsed, DateTime? SentToMaintenanceAt
     );
 //want to change the doubles in the report to a reference to one of these but not sure yet if that'll mess things up?

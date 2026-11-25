@@ -12,8 +12,8 @@ public class PatientTransport:AuditableEntity
     /// <summary> id of incident </summary>
     public Guid IncidentId { get; set; }
 
-    /// <summary> triage level of patient (1=resuscitation, 4=non urgent) </summary>
-    public TriageLevel triagelvl { get; set; }
+    /// <summary> triage level of patient (CTAS: 1=resuscitation, 5=non urgent) </summary>
+    public TriageLevel TriageLevel { get; set; }
 
     /// <summary> id of hospital patient was sent to </summary>
     public Guid HospitalId { get; set; }

@@ -30,7 +30,8 @@ namespace MyApplication.Api.Tests.Integration;
 public class EmergencyApiFactory : WebApplicationFactory<Program>
 {
     // An in-memory SQLite database lives as long as this connection stays open.
-    private readonly SqliteConnection _connection = new("DataSource=:memory:");
+    // Foreign Keys=True: SQLite only checks foreign keys when asked to, and SQL Server always does.
+    private readonly SqliteConnection _connection = new("DataSource=:memory:;Foreign Keys=True");
 
     public EmergencyApiFactory()
     {
