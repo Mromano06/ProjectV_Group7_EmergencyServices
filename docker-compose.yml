@@ -52,6 +52,11 @@ services:
       Authentication__Schemes__Bearer__ValidAudiences__0: "http://localhost:5227"
       Authentication__Schemes__Bearer__SigningKeys__0__Issuer: "dotnet-user-jwts"
       Authentication__Schemes__Bearer__SigningKeys__0__Value: "${JWT_SIGNING_KEY}"
+      # Registration's tokens (SH-S01). Put ONE of these in the root .env when dosi sends it:
+      #   REGISTRATION_PUBLIC_KEY=-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----   (RS256, safe to share)
+      #   REGISTRATION_SIGNING_KEY=...                                                       (HS256 secret, never commit)
+      Registration__PublicKey: "${REGISTRATION_PUBLIC_KEY:-}"
+      Registration__SigningKey: "${REGISTRATION_SIGNING_KEY:-}"
     ports:
       - "5000:8080"   # your computer's port 5000 -> the API's port 8080
     healthcheck:
