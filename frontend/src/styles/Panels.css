@@ -5,6 +5,7 @@
   --panel-text: #e5e7eb;
   --panel-muted: #9ca3af;
   --accent: #f59e0b;
+  --topbar: 44px;     /* height of the top bar (status + weather warnings) */
 }
 
 /* ---------- Layout ---------- */
@@ -22,9 +23,9 @@
 }
 .panel-notices {
   left: 0;
-  top: 0;
+  top: var(--topbar);
   width: 33.333vw;
-  height: 50vh;
+  height: calc(50vh - var(--topbar));
 }
 
 .panel-available {
@@ -43,9 +44,9 @@
 
 .panel-budget {
   right: 0;
-  top: 0;
+  top: var(--topbar);
   width: 33.333vw;
-  height: 55vh;
+  height: calc(55vh - var(--topbar));
 }
 
 .role-switch {
@@ -354,7 +355,7 @@
 /* ---------- Window 4: event log ---------- */
 .panel-log {
   left: 33.333vw;
-  top: 0;
+  top: var(--topbar);
   bottom: 0;
   width: 33.333vw;
 }
@@ -568,3 +569,65 @@
 .form-msg { margin: 6px 0 0; font-size: 13px; }
 .form-ok { color: #86efac; }
 .form-error { color: #fca5a5; }
+
+/* ---------- Top bar: status + weather warnings (ES-FR-022, issue #21) ---------- */
+.topbar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 1001;
+  height: var(--topbar);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 12px;
+  background: #0b1220;
+  color: var(--panel-text);
+  border-bottom: 1px solid var(--panel-border);
+  font-size: 13px;
+  text-align: left;
+}
+.topbar-status { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; white-space: nowrap; }
+.topbar-title { font-size: 14px; letter-spacing: 0.04em; text-transform: uppercase; }
+.topbar-user { color: var(--panel-muted); }
+.conn-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--panel-muted); }
+.conn-online { background: #22c55e; }
+.conn-offline { background: #ef4444; animation: soft-blink 1.2s ease-in-out infinite; }
+.conn-connecting { background: #f59e0b; }
+
+.topbar-warnings { flex: 1 1 auto; min-width: 0; overflow-x: auto; }
+.wx-list { display: flex; gap: 8px; margin: 0; padding: 0; list-style: none; white-space: nowrap; }
+.wx-chip {
+  --wx: #3b82f6;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border: 1px solid var(--wx);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--wx) 15%, transparent);
+}
+.wx-Warning   { --wx: #ef4444; }
+.wx-Watch     { --wx: #f97316; }
+.wx-Advisory  { --wx: #eab308; }
+.wx-Statement { --wx: #3b82f6; }
+.wx-sev {
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #0b1220;
+  background: var(--wx);
+}
+.wx-until, .wx-transit { color: var(--panel-muted); }
+.wx-empty { color: var(--panel-muted); }
+.wx-error { color: #fca5a5; }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
