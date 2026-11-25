@@ -10,17 +10,18 @@ namespace MyApplication.Api.Clients;
 
 /// <summary>
 /// ES-FR-025 / SH-C07 / SH-C08 / BF-07. Budget owns its own data; we only call its API.
-/// Contract confirmed by Budget & Finance (Nov 25).
+/// Contract checked against Budget's live Swagger (Nov 25): allocations are looked up by
+/// department code (/allocations/EMS), and Budget does not require a login token yet.
 /// </summary>
 public sealed class BudgetFinanceClient(HttpClient http, IServiceTokenProvider tokens)
 {
     /// <summary>Our department code in Budget's system.</summary>
     public const string DepartmentCode = "EMS";
 
-    /// <summary>GET /api/budget/v1/allocations/emergency: allocated, spent and remaining in CAD.</summary>
+    /// <summary>GET /api/budget/v1/allocations/EMS: departmentCode, departmentName, allocated, spent, remaining, currency.</summary>
     public async Task<JsonElement> GetAllocationAsync(CancellationToken ct)
     {
-        using var request = await CreateRequestAsync(HttpMethod.Get, "api/budget/v1/allocations/emergency", ct);
+        using var request = await CreateRequestAsync(HttpMethod.Get, $"api/budget/v1/allocations/{DepartmentCode}", ct);
         return await SendJsonAsync(request, ct);
     }
 
@@ -44,9 +45,14 @@ public sealed class BudgetFinanceClient(HttpClient http, IServiceTokenProvider t
     {
         if (http.BaseAddress is null)
             throw new ExternalServiceException("Budget service URL is not configured.");
-        var token = await tokens.GetTokenAsync(ct);
         var request = new HttpRequestMessage(method, path);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        // Send our service-account token when we have one (SH-S07). Budget's API doesn't require a
+        // token yet, so calls still go out without one instead of failing before they are sent.
+        string? token = null;
+        try { token = await tokens.GetTokenAsync(ct); }
+        catch (ExternalServiceException) { /* no service-account token configured yet */ }
+        if (!string.IsNullOrWhiteSpace(token))
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         return request;
     }
 

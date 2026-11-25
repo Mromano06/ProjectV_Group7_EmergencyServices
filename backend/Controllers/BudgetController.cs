@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyApplication.Api.Clients;
@@ -41,7 +42,20 @@ public sealed class BudgetController(BudgetFinanceClient client) : ControllerBas
         if (decimal.Round(request.Amount, 2) != request.Amount)
             return BadRequest(new ErrorResponse("invalid_amount", "Amount can have at most 2 decimals (cents).", HttpContext.TraceIdentifier));
         var body = new ExpenseRequest(BudgetFinanceClient.DepartmentCode, request.Amount, request.Description.Trim());
-        try { return Ok(await client.SubmitExpenseAsync(body, ct)); }
+        try
+        {
+            var result = await client.SubmitExpenseAsync(body, ct);
+            // Budget may answer 2xx with { approved: false, message } instead of a 400 – still a refusal.
+            if (result.ValueKind == JsonValueKind.Object &&
+                result.TryGetProperty("approved", out var approved) && approved.ValueKind == JsonValueKind.False)
+            {
+                var reason = result.TryGetProperty("message", out var m) && m.ValueKind == JsonValueKind.String
+                    ? m.GetString()! : "Budget did not approve the expense.";
+                return BadRequest(new ErrorResponse("budget_rejected", reason,
+                    Activity.Current?.Id ?? HttpContext.TraceIdentifier));
+            }
+            return Ok(result);
+        }
         catch (ExternalServiceException ex) { return Fail(ex); }
     }
 

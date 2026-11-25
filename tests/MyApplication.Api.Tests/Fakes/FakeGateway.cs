@@ -10,7 +10,7 @@ namespace MyApplication.Api.Tests;
 /// Our API's HTTP clients are pointed at this instead of the network.
 ///
 /// Tests tell it what to reply:
-///     factory.Gateway.Respond(HttpMethod.Get, "/api/budget/v1/allocations/emergency", HttpStatusCode.OK, new { total = 1000 });
+///     factory.Gateway.Respond(HttpMethod.Get, "/api/budget/v1/allocations/EMS", HttpStatusCode.OK, new { total = 1000 });
 /// and can check what our API sent:
 ///     factory.Gateway.Requests
 ///
