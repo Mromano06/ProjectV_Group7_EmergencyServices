@@ -101,6 +101,8 @@ export const emergencyApi = {
   requestFunding: (body: { amount: number; reason: string; urgent: boolean }) =>
     apiRequest<FundingRequestDto>('POST', `${BASE}/budget/funding-requests`, body),
   simulateWarning: () => apiRequest<WeatherWarningDto>('POST', `${BASE}/weather-warnings/simulate`),
+  getStats: (from: string, to: string) =>
+    apiRequest<StatsDto>('GET', `${BASE}/stats?${new URLSearchParams({ from, to })}`),
 };
 
 // ---------- Converters ----------
@@ -167,5 +169,52 @@ export function toWarning(dto: WeatherWarningDto): WeatherWarning {
     status: dto.status as WeatherWarning['status'],
     source: dto.source,
     affectsTransit: dto.affectsTransit,
+  };
+}
+
+
+// ---------- JSON shapes ----------
+
+/** GET /stats (ES-FR-024): totals for incidents reported in [from, to). */
+export interface StatsDto {
+  from: string;
+  to: string;
+  totalIncidents: number;
+  byType: Record<string, number>;          // { "Fire": 5, "Medical": 6, ... }
+  byStatus: Record<string, number>;        // { "Closed": 8, "Resolved": 2, "EnRoute": 2 }
+  averageResponseMinutes: number | null;
+  deathCount: number;
+}
+
+
+/** What the stats panel shows. Only this converter needs to change if /stats changes shape. */
+export interface IncidentStats {
+  total: number;
+  byType: Record<string, number>;
+  byStatus: Record<string, number>;
+  averageResponseMinutes: number | null;
+  deaths: number;
+}
+ 
+
+export interface IncidentStats {
+  total: number;
+  completed: number;               // Resolved + Closed
+  byType: Record<string, number>;
+  byStatus: Record<string, number>;
+  averageResponseMinutes: number | null;
+  deaths: number;
+}
+
+export function toStats(dto: StatsDto): IncidentStats {
+  const byType = dto.byType ?? {};
+  const byStatus = dto.byStatus ?? {};
+  return {
+    total: dto.totalIncidents ?? Object.values(byType).reduce((sum, n) => sum + n, 0),
+    completed: (byStatus.Resolved ?? 0) + (byStatus.Closed ?? 0),
+    byType,
+    byStatus,
+    averageResponseMinutes: dto.averageResponseMinutes ?? null,
+    deaths: dto.deathCount ?? 0,
   };
 }

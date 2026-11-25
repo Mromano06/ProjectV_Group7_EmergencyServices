@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { canManageDispatch, isAdmin } from '../auth/Permissions';
 import { useDispatchStore } from '../state/DispatchContext';
 import type { LogEntry, LogLevel } from '../types/models';
 import { formatClock } from '../utils/Labels';
+import StatsPanel from './StatsPanel';
 import '../styles/Panels.css';
 
 const LEVEL_ICON: Record<LogLevel, string> = { info: '•', success: '✔', warning: '▲', danger: '✖' };
@@ -15,6 +17,7 @@ export default function LogPanel() {
   const { user } = useAuth();
   const { logs, records, hospitals, addTestWarning, clearLog } = useDispatchStore();
   const canManage = canManageDispatch(user.role);
+  const [statsOpen, setStatsOpen] = useState(false); // ES-FR-024 pop-up
 
   const successful = records.filter((r) => r.successful).length;
   const totalDeaths = hospitals.reduce((sum, h) => sum + h.deaths, 0);
@@ -24,6 +27,7 @@ export default function LogPanel() {
       <header className="panel-header">
         <h2>Event log ({logs.length})</h2>
         <div className="panel-header-actions">
+          <button className="panel-btn" onClick={() => setStatsOpen(true)} aria-haspopup="dialog">Stats</button>
           {isAdmin(user.role) && (
             <button className="panel-btn" onClick={() => void addTestWarning()}>+ Test weather</button>
           )}
@@ -88,6 +92,8 @@ export default function LogPanel() {
           ))}
         </ul>
       )}
+
+      {statsOpen && <StatsPanel onClose={() => setStatsOpen(false)} />}
     </section>
   );
 }
