@@ -38,7 +38,8 @@ public sealed class BudgetController(BudgetFinanceClient client) : ControllerBas
     [Authorize(Roles = "emergency:Admin")]
     public async Task<IActionResult> Expense(ExpenseRequest request, CancellationToken ct)
     {
-        if (request.IncurredAt == default) return BadRequest(new ErrorResponse("invalid_incurred_at", "IncurredAt is required.", HttpContext.TraceIdentifier));
+        // DepartmentCode, Amount and Description are validated by the [Required]/[Range]
+        // attributes on ExpenseRequest (Budget's contract), so no extra checks are needed here.
         try { return Ok(await client.SubmitExpenseAsync(request, ct)); }
         catch (ExternalServiceException ex) { return Fail(ex); }
     }

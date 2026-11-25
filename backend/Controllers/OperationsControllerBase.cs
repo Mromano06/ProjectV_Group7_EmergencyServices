@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using MyApplication.Api.Models;
 using MyApplication.Api.Services;
+using MyApplication.Api.Dtos;
 
 namespace MyApplication.Api.Controllers;
 

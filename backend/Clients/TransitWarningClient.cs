@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using MyApplication.Api.Integration;
 using MyApplication.Api.Models;
+using MyApplication.Api.Dtos;
 
 namespace MyApplication.Api.Clients;
 

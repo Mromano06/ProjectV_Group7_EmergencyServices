@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using MyApplication.Api.Clients;
 using MyApplication.Api.Models;
+using MyApplication.Api.Dtos;
 
 namespace MyApplication.Api.Tests;
 

@@ -4,6 +4,7 @@ using MyApplication.Api.Data;
 using MyApplication.Api.Enums;
 using MyApplication.Api.Models;
 using MyApplication.Api.Services;
+using MyApplication.Api.Dtos;
 
 namespace MyApplication.Api.Tests;
 

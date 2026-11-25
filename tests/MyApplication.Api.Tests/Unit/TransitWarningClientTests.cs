@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using MyApplication.Api.Clients;
 using MyApplication.Api.Integration;
 using MyApplication.Api.Models;
+using MyApplication.Api.Dtos;
 
 namespace MyApplication.Api.Tests;
 
@@ -132,3 +133,4 @@ public class TransitWarningClientTests
             throw new HttpRequestException("No such host is known.");
     }
 }
+

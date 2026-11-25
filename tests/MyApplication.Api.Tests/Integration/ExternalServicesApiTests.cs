@@ -29,12 +29,12 @@ public class ExternalServicesApiTests : IClassFixture<EmergencyApiFactory>
 
     private FakeGateway Gateway => _factory.Gateway;
 
+    // Matches Budget's expense contract (BF-03 / SH-C08): departmentCode, amount, description.
     private static object Expense(decimal amount = 250.75m) => new
     {
+        departmentCode = "EMS",
         amount,
-        category = "Fuel",
-        description = "Integration test expense",
-        incurredAt = DateTime.UtcNow
+        description = "Fuel - integration test expense"
     };
 
     // ---------- Budget ----------
@@ -78,7 +78,22 @@ public class ExternalServicesApiTests : IClassFixture<EmergencyApiFactory>
         await response.ExpectAsync(HttpStatusCode.OK);
         var sent = Gateway.Requests.Last(r => r.PathAndQuery == "/api/budget/v1/expenses");
         Assert.Contains("250.75", sent.Body);
-        Assert.Contains("Fuel", sent.Body);
+        Assert.Contains("\"departmentCode\":\"EMS\"", sent.Body);
+        Assert.Contains("Fuel - integration test expense", sent.Body);
+    }
+
+    // TC-API-EXT-13
+    [Fact]
+    [Trait("Requirement", "ES-NFR-004")]
+    public async Task Expense_WithoutDescription_Returns400_AndIsNotSent()
+    {
+        var sentBefore = Gateway.Requests.Count(r => r.PathAndQuery == "/api/budget/v1/expenses");
+
+        var response = await _admin.PostAsJsonAsync("/api/emergency/v1/budget/expenses",
+            new { departmentCode = "EMS", amount = 50m });
+
+        Assert.Equal("validation_failed", await response.ExpectErrorAsync(HttpStatusCode.BadRequest));
+        Assert.Equal(sentBefore, Gateway.Requests.Count(r => r.PathAndQuery == "/api/budget/v1/expenses"));
     }
 
     // TC-API-EXT-04
