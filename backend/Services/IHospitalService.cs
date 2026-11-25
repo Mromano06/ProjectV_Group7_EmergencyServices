@@ -1,3 +1,4 @@
+using MyApplication.Api.Enums;
 using MyApplication.Api.Models;
 
 namespace MyApplication.Api.Services;

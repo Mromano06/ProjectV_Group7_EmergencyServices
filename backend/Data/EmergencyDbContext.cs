@@ -122,7 +122,9 @@ public class EmergencyDbContext : DbContext
             e.HasIndex(x => x.IncidentId);
             e.HasOne<Incident>().WithMany().HasForeignKey(x => x.IncidentId)
                 .OnDelete(DeleteBehavior.Restrict);
-            e.HasOne<Hospital>().WithMany().HasForeignKey(x => x.HospitalId)
+            e.HasOne<Incident>()
+                .WithMany(i => i.PatientTransports)
+                .HasForeignKey(x => x.IncidentId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
@@ -134,7 +136,9 @@ public class EmergencyDbContext : DbContext
                 "CK_HydrantUsages_LitresUsed", "[LitresUsed] > 0"));
             e.HasIndex(x => new { x.IncidentId, x.SentToMaintenanceAt });
             e.Property(x => x.LastDeliveryError).HasMaxLength(1000);
-            e.HasOne<Incident>().WithMany().HasForeignKey(x => x.IncidentId)
+            e.HasOne<Incident>()
+                .WithMany(i => i.HydrantUsages)
+                .HasForeignKey(x => x.IncidentId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
@@ -191,9 +195,11 @@ public class EmergencyDbContext : DbContext
                 .HasForeignKey(x => x.IncidentId).OnDelete(DeleteBehavior.Restrict);
             e.HasMany(x => x.StatusHistory).WithOne(x => x.Incident)
                 .HasForeignKey(x => x.IncidentId).OnDelete(DeleteBehavior.Restrict);
-            e.HasOne(x => x.Report).WithOne(x => x.Incident)
-                .HasForeignKey<AfterActionReport>(x => x.IncidentId).OnDelete(DeleteBehavior.Restrict);
-        });
+            e.HasOne(x => x.Report)
+                .WithOne(x => x.Incident)
+                .HasForeignKey<AfterActionReport>(x => x.IncidentId)
+                .OnDelete(DeleteBehavior.Restrict);
+    });
 
         // Station entity creation
         modelBuilder.Entity<IncidentAssignment>(e =>

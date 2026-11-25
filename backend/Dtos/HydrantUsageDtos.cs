@@ -7,12 +7,3 @@ public sealed class HydrantUsageRequest
     public Guid HydrantId { get; set; }
     public double? LitresUsed { get; set; }
 }
-
-public sealed record HydrantUsageDto(
-    Guid Id,
-    Guid IncidentId,
-    Guid HydrantId,
-    double LitresUsed,
-    DateTime? SentToMaintenanceAt,
-    int DeliveryAttempts,
-    DateTime? LastAttemptAt);

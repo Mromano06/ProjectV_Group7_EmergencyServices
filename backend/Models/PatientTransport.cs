@@ -2,7 +2,7 @@ using MyApplication.Api.Enums;
 
 namespace MyApplication.Api.Models;
 
-// sebastian solorzano - Nov 21th, 2026 - patient transport model
+// sebastian solorzano, matthew romano - Nov 21th, 2026 - patient transport model
 
 /// <summary>
 /// represents the condition of a patient recovered from an incident
@@ -14,7 +14,7 @@ public class PatientTransport:AuditableEntity
     public Guid IncidentId { get; set; }
 
     /// <summary> triage level of patient (1=resuscitation, 4=non urgent) </summary>
-    public TriageLevel Triagelvl { get; set; }
+    public TriageLevel TriageLevel{ get; set; }
 
     /// <summary> id of hospital patient was sent to </summary>
     public Guid HospitalId { get; set; }

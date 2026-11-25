@@ -193,6 +193,7 @@ builder.Services.AddHttpClient<RoadClosureClient>(http =>
     http.Timeout = TimeSpan.FromSeconds(5);
 });
 
+builder.Services.AddScoped<IPatientTransportService, PatientTransportService>();
 
 // Build the application after ALL services have been registered.
 var app = builder.Build();
