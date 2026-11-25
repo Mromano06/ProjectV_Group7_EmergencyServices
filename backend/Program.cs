@@ -9,6 +9,8 @@ using MyApplication.Api.Models;
 using MyApplication.Api.Services;
 using System.Text.Json.Serialization;
 using MyApplication.Api.Dtos;
+using MyApplication.Api.Health;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -135,6 +137,10 @@ builder.Services.AddScoped<IIncidentService, IncidentService>();
 // Stat details, deaths, incidents, time, location
 builder.Services.AddScoped<IStatsService, StatsService>();
 
+// Health check for GET /health (ES-NFR-001, SH-A05): 200 when the API and its database are up, 503 if not.
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("database");
+
 
 // TODO: Remove once done
 // Adds tokens automaticall for dev
@@ -245,6 +251,12 @@ app.UseAuthentication(); // must come BEFORE UseAuthorization
 app.UseAuthorization();
 
 app.MapControllers();
+
+// GET /health – open to everyone (no login) so Docker, the API gateway and other teams can check us.
+// Also at /api/emergency/v1/health so it can be reached through the gateway's /api/emergency/... route.
+var healthOptions = new HealthCheckOptions { ResponseWriter = HealthResponseWriter.WriteAsync };
+app.MapHealthChecks("/health", healthOptions).AllowAnonymous();
+app.MapHealthChecks("/api/emergency/v1/health", healthOptions).AllowAnonymous();
 
 app.Run();
 
