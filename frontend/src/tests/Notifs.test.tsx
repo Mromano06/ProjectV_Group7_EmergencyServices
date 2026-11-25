@@ -21,6 +21,9 @@ const api = vi.hoisted(() => ({
   releaseAssignment: vi.fn(),
   activeWarnings: vi.fn(),
   simulateWarning: vi.fn(),
+  getBudget: vi.fn(),
+  submitExpense: vi.fn(),
+  requestFunding: vi.fn(),
 }));
 
 vi.mock('../api/emergencyApi', async (importOriginal) => ({
@@ -70,6 +73,10 @@ beforeEach(() => {
   api.releaseAssignment.mockResolvedValue({});
   api.activeWarnings.mockResolvedValue([]);
   api.simulateWarning.mockResolvedValue({});
+  api.getBudget.mockResolvedValue({
+    departmentCode: 'EMS', departmentName: 'Emergency Services',
+    allocated: 4500000, spent: 0, remaining: 4500000, currency: 'CAD',
+  });
 });
 
 function showApp(role: Role = 'Dispatcher') {

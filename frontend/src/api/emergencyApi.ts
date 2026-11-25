@@ -44,6 +44,22 @@ export interface WeatherWarningDto {
   startsAt: string; endsAt: string; status: string; source: string; affectsTransit: boolean;
 }
 
+/** Our budget from Budget & Finance (ES-FR-025), passed through by GET /budget. */
+export interface BudgetDto {
+  departmentCode: string; departmentName: string | null;
+  allocated: number; spent: number; remaining: number; currency: string | null;
+}
+
+/** Budget's answer to an expense: approved, why not, and what's left. */
+export interface ExpenseResultDto {
+  approved: boolean; message: string | null; remainingBudget: number | null;
+}
+
+/** Budget's funding request record. status: 0 = Pending, 1 = Approved, 2 = Rejected. */
+export interface FundingRequestDto {
+  id: string; amount: number; reason: string | null; urgent: boolean; status: number | string;
+}
+
 export interface CreateIncidentBody {
   type: IncidentType;
   severity: Severity;
@@ -78,6 +94,12 @@ export const emergencyApi = {
     apiRequest<AssignmentDto>('POST',
       `${BASE}/incidents/${incidentId}/assignments/${assignmentId}/release`),
   activeWarnings: () => apiRequest<WeatherWarningDto[]>('GET', `${BASE}/weather-warnings?active=true`),
+  getBudget: () => apiRequest<BudgetDto>('GET', `${BASE}/budget`),
+  /** Our API always sends it to Budget as department EMS. */
+  submitExpense: (body: { amount: number; description: string }) =>
+    apiRequest<ExpenseResultDto>('POST', `${BASE}/budget/expenses`, body),
+  requestFunding: (body: { amount: number; reason: string; urgent: boolean }) =>
+    apiRequest<FundingRequestDto>('POST', `${BASE}/budget/funding-requests`, body),
   simulateWarning: () => apiRequest<WeatherWarningDto>('POST', `${BASE}/weather-warnings/simulate`),
 };
 
