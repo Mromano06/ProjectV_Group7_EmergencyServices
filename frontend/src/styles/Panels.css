@@ -38,7 +38,14 @@
   right: 0;
   bottom: 0;
   width: 33.333vw;
-  max-height: 75vh;   /* unchanged */
+  max-height: 45vh;   /* the budget panel uses the top 55% of this column */
+}
+
+.panel-budget {
+  right: 0;
+  top: 0;
+  width: 33.333vw;
+  height: 55vh;
 }
 
 .role-switch {
@@ -520,3 +527,44 @@
 @media (prefers-reduced-motion: reduce) {
   .notice, .notice.sev-1, .critical-count, .notice.sev-1 .chip-alert { animation: none; }
 }
+
+/* ---------- Budget panel (ES-FR-025) ---------- */
+.budget-body { flex: 1 1 auto; overflow-y: auto; padding: 10px 12px; }
+.budget-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.budget-stats .stat-num { font-size: 16px; }
+.budget-bar {
+  position: relative;
+  height: 8px;
+  margin-top: 10px;
+  overflow: hidden;
+  background: var(--panel-line);
+  border-radius: 4px;
+}
+.budget-bar-fill { position: absolute; inset: 0 auto 0 0; background: #22c55e; border-radius: 4px; }
+.budget-bar-low .budget-bar-fill { background: #ef4444; }
+.budget-hint { margin: 6px 0 0; font-size: 12px; color: var(--panel-muted); }
+.budget-form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--panel-line);
+}
+.budget-form h3 { margin: 0 0 4px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; }
+.budget-form label { font-size: 12px; color: var(--panel-muted); }
+.budget-form input:not([type='checkbox']) {
+  padding: 6px 8px;
+  color: var(--panel-text);
+  background: #0b1220;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  font: inherit;
+}
+.budget-form input:focus-visible,
+.budget-form button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.budget-form .panel-btn { align-self: flex-start; margin-top: 4px; }
+.budget-check { display: flex; align-items: center; gap: 6px; color: var(--panel-text) !important; }
+.form-msg { margin: 6px 0 0; font-size: 13px; }
+.form-ok { color: #86efac; }
+.form-error { color: #fca5a5; }

@@ -3,6 +3,7 @@ import AvailableUnits from './components/AvailableUnitPanel';
 import DispatchTracker from './components/DispatchTracker';
 import NotificationsPanel from './components/NotificationPanel';
 import LogPanel from './components/LogPanel';
+import BudgetPanel from './components/BudgetPanel';
 import { useDispatchStore, type Connection } from './state/DispatchContext';
 import { parseUtc } from './utils/Labels';
 import './App.css'
@@ -89,6 +90,8 @@ function App() {
           <NotificationsPanel />
 
           <LogPanel />
+
+          <BudgetPanel />
         </section>
     </main>
   )
