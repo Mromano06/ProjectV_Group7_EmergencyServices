@@ -16,22 +16,12 @@ public class Hospital : AuditableEntity
     public string Name {get; set;} = string.Empty;
 
     /// <summary>Hospital address/location.</summary>
-    public string Location {get; set;} = string.Empty;
+    public Location Location {get; set;} = new();
 
     /// <summary>Total number of rooms in the hospital</summary>
-    public int TotalRooms {get; set;}
+    public HospitalStatus ErStatus {get; set;} = HospitalStatus.Open;
 
     /// <summary>Total number of free/remaining rooms.</summary>
-    public int OccupiedRooms {get; set;}
-
-    /// <summary>
-    /// Number of remaining rooms.
-    /// Calculated not stored
-    /// </summary>
-    [NotMapped]
-    public int AvailableRooms => TotalRooms - OccupiedRooms;
-
-    /// <summary>Current operational status of the hospital.</summary>
-    public HospitalStatus Status {get; set;} = HospitalStatus.Operational;
+    public int AvailableBeds {get; set;}
 
 }

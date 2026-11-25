@@ -8,7 +8,7 @@ public sealed class HydrantUsageRequest
     public double? LitresUsed { get; set; }
 }
 
-public sealed record HydrantUsageDto (
+public sealed record HydrantUsageDto(
     Guid Id,
     Guid IncidentId,
     Guid HydrantId,

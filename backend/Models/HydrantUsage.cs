@@ -12,11 +12,20 @@ public class HydrantUsage : AuditableEntity
 
     /// <summary> id of the fire hydrant used </summary>
     public Guid HydrantId { get; set; }
-        //im gonna assume hydrant ids belong to maintenance? since we don't got 'em
 
     /// <summary> litres of water used from hydrant </summary>
     public double LitresUsed { get; set; }
 
     /// <summary> timestamp for maintenance </summary>
-    public DateTime SentToMaintenanceAt { get; set; }
+    public DateTime? SentToMaintenanceAt { get; set; }
+
+    /// <summary> number of attempted sends to Maintenance </summary>
+    public int DeliveryAttempts {get; set;}
+
+    /// <summary> timestamp of last send attampt <summary>
+    public DateTime? LastAttempt { get; set; }
+
+    /// <summary> last dilivery error for troubleshooting <summary>
+    public string? LastDeliveryError { get; set; }
+
 }

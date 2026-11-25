@@ -1,4 +1,5 @@
 using MyApplication.Api.Enums;
+
 namespace MyApplication.Api.Models;
 
 // sebastian solorzano - Nov 21th, 2026 - patient transport model
@@ -13,7 +14,7 @@ public class PatientTransport:AuditableEntity
     public Guid IncidentId { get; set; }
 
     /// <summary> triage level of patient (1=resuscitation, 4=non urgent) </summary>
-    public TriageLevel triagelvl { get; set; }
+    public TriageLevel Triagelvl { get; set; }
 
     /// <summary> id of hospital patient was sent to </summary>
     public Guid HospitalId { get; set; }

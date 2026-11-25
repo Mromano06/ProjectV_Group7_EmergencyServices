@@ -14,5 +14,18 @@ public interface IHospitalService
 
     /// <summary>Retrieve a hospital by its ID.</summary>
     Task<Hospital?> GetByIdAsync(Guid id);
+/// <summary>Get hospitals, optionally filtering by ER status and sorting by distance.</summary>
+    Task<List<HospitalSearchResult>> SearchAsync(
+        double? latitude, double? longitude, bool openOnly, CancellationToken ct);
+
+    /// <summary>Register a new hospital (Admin only at controller level).</summary>
+    Task<Hospital> CreateAsync(Hospital hospital, CancellationToken ct = default);
+
+    /// <summary>Update hospital name, location, status and beds.</summary>
+    Task<Hospital?> UpdateAsync(Guid id, Hospital hospital, CancellationToken ct = default);
+
+    /// <summary>Update only ER status and available beds.</summary>
+    Task<Hospital?> UpdateErAsync(Guid id, HospitalStatus status, int availableBeds, CancellationToken ct);
 }
 
+public sealed record HospitalSearchResult(Hospital Hospital, double? DistanceKm);
