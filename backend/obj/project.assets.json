@@ -2277,23 +2277,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\angel\\.nuget\\packages\\": {},
+    "C:\\Users\\Mroma\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\angel\\OneDrive\\Documents\\GitHub\\ProjectV_Group1_EmergencyServices\\backend\\MyApplication.Api.csproj",
+      "projectUniqueName": "C:\\Users\\Mroma\\OneDrive\\Projects - Semester 6\\Project V\\TermProject\\ProjectV_Group7_EmergencyServices\\backend\\MyApplication.Api.csproj",
       "projectName": "MyApplication.Api",
-      "projectPath": "C:\\Users\\angel\\OneDrive\\Documents\\GitHub\\ProjectV_Group1_EmergencyServices\\backend\\MyApplication.Api.csproj",
-      "packagesPath": "C:\\Users\\angel\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\angel\\OneDrive\\Documents\\GitHub\\ProjectV_Group1_EmergencyServices\\backend\\obj\\",
+      "projectPath": "C:\\Users\\Mroma\\OneDrive\\Projects - Semester 6\\Project V\\TermProject\\ProjectV_Group7_EmergencyServices\\backend\\MyApplication.Api.csproj",
+      "packagesPath": "C:\\Users\\Mroma\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\Mroma\\OneDrive\\Projects - Semester 6\\Project V\\TermProject\\ProjectV_Group7_EmergencyServices\\backend\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\angel\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\Mroma\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
