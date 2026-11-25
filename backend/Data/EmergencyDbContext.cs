@@ -32,6 +32,12 @@ public class EmergencyDbContext : DbContext
     // Hospitals
     public DbSet<Hospital> Hospitals => Set<Hospital>();
 
+    // Patients transported after an incident (ES-FR-014)
+    public DbSet<PatientTransport> PatientTransports => Set<PatientTransport>();
+
+    // Hydrant water usage for Maintenance notifications (ES-FR-016)
+    public DbSet<HydrantUsage> HydrantUsages => Set<HydrantUsage>();
+
     // Add other tables here, e.g.
     // public DbSet<Incident> Incidents => Set<Incident>();
 
@@ -77,40 +83,59 @@ public class EmergencyDbContext : DbContext
 
         modelBuilder.Entity<Hospital>(e =>
         {
-            e.ToTable("Hospitals");
+            e.ToTable("Hospitals", t => t.HasCheckConstraint(
+                "CK_Hospitals_AvailableBeds", "[AvailableBeds] >= 0"));
 
             // Hospital identification
             e.Property(h => h.Name)
                 .HasMaxLength(200)
                 .IsRequired();
 
-            e.Property(h => h.Location)
-                .HasMaxLength(500)
-                .IsRequired();
+            // Geographical location (same owned Location type as Stations and Incidents)
+            e.OwnsOne(h => h.Location, loc =>
+            {
+                loc.Property(p => p.Latitude).HasColumnName("Latitude");
+                loc.Property(p => p.Longitude).HasColumnName("Longitude");
+                loc.Property(p => p.Address).HasColumnName("Address").HasMaxLength(500);
+            });
+            e.Navigation(h => h.Location).IsRequired();
 
-            // Room capacity
-            e.Property(h => h.TotalRooms)
-                .IsRequired();
-
-            e.Property(h => h.OccupiedRooms)
-                .IsRequired();
-
-            // Store hospital status as text
-            e.Property(h => h.Status)
+            // Hospital ER status is saved as text (Open/Diverting/Closed)
+            e.Property(h => h.ErStatus)
                 .HasConversion<string>()
-                .HasMaxLength(30);
+                .HasMaxLength(30)
+                .IsRequired();
+
+            // ES-FR-012: bed availability, not total / occupied rooms
+            e.Property(h => h.AvailableBeds).IsRequired();
 
             // Keep timestamps consistent
-            e.Property(h => h.CreatedAt)
-                .HasConversion(utc);
+            e.Property(h => h.CreatedAt).HasConversion(utc);
+            // The global nullable-UTC converter below handles UpdatedAt.
+        });
 
-            // Prevent invalid capacity values
-            e.ToTable(t =>
-            {
-                t.HasCheckConstraint(
-                    "CK_Hospitals_Capacity",
-                    "[TotalRooms] >= 0 AND [OccupiedRooms] >= 0 AND [OccupiedRooms] <= [TotalRooms]");
-            });
+        // Patient transport details (ES-FR-014); no medical history data is stored.
+        modelBuilder.Entity<PatientTransport>(e =>
+        {
+            e.ToTable("PatientTransports");
+            e.Property(x => x.TriageLevel).HasConversion<string>().HasMaxLength(40).IsRequired();
+            e.HasIndex(x => x.IncidentId);
+            e.HasOne<Incident>().WithMany().HasForeignKey(x => x.IncidentId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Hospital>().WithMany().HasForeignKey(x => x.HospitalId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Persist hydrant water usage before sending it to Maintenance (ES-FR-016).
+        // SentToMaintenanceAt is nullable so pending records can be retried later.
+        modelBuilder.Entity<HydrantUsage>(e =>
+        {
+            e.ToTable("HydrantUsages", t => t.HasCheckConstraint(
+                "CK_HydrantUsages_LitresUsed", "[LitresUsed] > 0"));
+            e.HasIndex(x => new { x.IncidentId, x.SentToMaintenanceAt });
+            e.Property(x => x.LastDeliveryError).HasMaxLength(1000);
+            e.HasOne<Incident>().WithMany().HasForeignKey(x => x.IncidentId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Station entity creation

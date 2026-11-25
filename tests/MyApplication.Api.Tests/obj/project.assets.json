@@ -3409,23 +3409,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\angel\\.nuget\\packages\\": {},
+    "C:\\Users\\Mroma\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "c:\\Users\\angel\\OneDrive\\Documents\\GitHub\\ProjectV_Group1_EmergencyServices\\tests\\MyApplication.Api.Tests\\MyApplication.Api.Tests.csproj",
+      "projectUniqueName": "C:\\Users\\Mroma\\OneDrive\\Projects - Semester 6\\Project V\\TermProject\\ProjectV_Group7_EmergencyServices\\tests\\MyApplication.Api.Tests\\MyApplication.Api.Tests.csproj",
       "projectName": "MyApplication.Api.Tests",
-      "projectPath": "c:\\Users\\angel\\OneDrive\\Documents\\GitHub\\ProjectV_Group1_EmergencyServices\\tests\\MyApplication.Api.Tests\\MyApplication.Api.Tests.csproj",
-      "packagesPath": "C:\\Users\\angel\\.nuget\\packages\\",
-      "outputPath": "c:\\Users\\angel\\OneDrive\\Documents\\GitHub\\ProjectV_Group1_EmergencyServices\\tests\\MyApplication.Api.Tests\\obj\\",
+      "projectPath": "C:\\Users\\Mroma\\OneDrive\\Projects - Semester 6\\Project V\\TermProject\\ProjectV_Group7_EmergencyServices\\tests\\MyApplication.Api.Tests\\MyApplication.Api.Tests.csproj",
+      "packagesPath": "C:\\Users\\Mroma\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\Mroma\\OneDrive\\Projects - Semester 6\\Project V\\TermProject\\ProjectV_Group7_EmergencyServices\\tests\\MyApplication.Api.Tests\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\angel\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\Mroma\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -3441,8 +3441,8 @@
           "framework": "net11.0",
           "targetAlias": "net11.0",
           "projectReferences": {
-            "C:\\Users\\angel\\OneDrive\\Documents\\GitHub\\ProjectV_Group1_EmergencyServices\\backend\\MyApplication.Api.csproj": {
-              "projectPath": "C:\\Users\\angel\\OneDrive\\Documents\\GitHub\\ProjectV_Group1_EmergencyServices\\backend\\MyApplication.Api.csproj"
+            "C:\\Users\\Mroma\\OneDrive\\Projects - Semester 6\\Project V\\TermProject\\ProjectV_Group7_EmergencyServices\\backend\\MyApplication.Api.csproj": {
+              "projectPath": "C:\\Users\\Mroma\\OneDrive\\Projects - Semester 6\\Project V\\TermProject\\ProjectV_Group7_EmergencyServices\\backend\\MyApplication.Api.csproj"
             }
           }
         }
