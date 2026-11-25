@@ -7,7 +7,7 @@ namespace MyApplication.Api.Tests.Integration;
 
 /// <summary>
 /// Endpoints that call OTHER teams' services through the gateway: Budget (SH-C08/09),
-/// HR (SH-C10/11) and Maintenance road closures (SH-C03, ES-FR-010).
+/// HR (SH-C10/11) and road closures from Public Transport (SH-C17, ES-FR-010).
 /// The other services are faked with FakeGateway, so each test decides what they "reply".
 /// </summary>
 [Trait("Category", "Integration")]
@@ -28,6 +28,9 @@ public class ExternalServicesApiTests : IClassFixture<EmergencyApiFactory>
     }
 
     private FakeGateway Gateway => _factory.Gateway;
+
+    // Public Transport serves everyone's road closures (SH-C17), confirmed Nov 25.
+    private const string RoadClosuresPath = "/api/transport/v1/road-closures";
 
     // Matches Budget's expense contract (BF-03 / SH-C08): departmentCode, amount, description.
     private static object Expense(decimal amount = 250.75m) => new
@@ -195,7 +198,7 @@ public class ExternalServicesApiTests : IClassFixture<EmergencyApiFactory>
     {
         var incident = await _dispatcher.CreateIncidentAsync();
         var endsAt = DateTimeOffset.UtcNow.AddHours(4);
-        Gateway.Respond(HttpMethod.Get, "/api/maintenance/v1/road-closures?active=true", HttpStatusCode.OK, new[]
+        Gateway.Respond(HttpMethod.Get, RoadClosuresPath, HttpStatusCode.OK, new[]
         {
             new { id = "near", description = "Water main repair", latitude = TestData.CityLat + 0.0045, longitude = TestData.CityLon, expectedEndAt = endsAt.ToString("O") },
             new { id = "far", description = "Bridge work", latitude = TestData.CityLat + 0.045, longitude = TestData.CityLon, expectedEndAt = endsAt.ToString("O") }
@@ -213,14 +216,14 @@ public class ExternalServicesApiTests : IClassFixture<EmergencyApiFactory>
     // TC-API-EXT-11
     [Fact]
     [Trait("Requirement", "SH-A07")]
-    public async Task RoadClosures_WhenMaintenanceIsDown_ReturnsAClearError()
+    public async Task RoadClosures_WhenTransitIsDown_ReturnsAClearError()
     {
         var incident = await _dispatcher.CreateIncidentAsync();
-        Gateway.Respond(HttpMethod.Get, "/api/maintenance/v1/road-closures?active=true", HttpStatusCode.InternalServerError);
+        Gateway.Respond(HttpMethod.Get, RoadClosuresPath, HttpStatusCode.InternalServerError);
 
         var response = await _dispatcher.GetAsync($"/api/emergency/v1/incidents/{incident.Id}/road-closures");
 
-        Assert.Equal("maintenance_unavailable", await response.ExpectErrorAsync(HttpStatusCode.BadGateway));
+        Assert.Equal("road_closures_unavailable", await response.ExpectErrorAsync(HttpStatusCode.BadGateway));
     }
 
     // TC-API-EXT-12
@@ -231,5 +234,104 @@ public class ExternalServicesApiTests : IClassFixture<EmergencyApiFactory>
         var response = await _dispatcher.GetAsync($"/api/emergency/v1/incidents/{Guid.NewGuid()}/road-closures");
 
         Assert.Equal("incident_not_found", await response.ExpectErrorAsync(HttpStatusCode.NotFound));
+    }
+
+    // TC-API-EXT-14
+    [Fact]
+    [Trait("Requirement", "ES-FR-010")]
+    public async Task RoadClosures_AcceptNestedLocation_AndKeepClosuresWithoutCoordinates()
+    {
+        var incident = await _dispatcher.CreateIncidentAsync();
+        Gateway.Respond(HttpMethod.Get, RoadClosuresPath, HttpStatusCode.OK, new
+        {
+            items = new object[]
+            {
+                new { id = "nested", reason = "Sinkhole", location = new { latitude = TestData.CityLat, longitude = TestData.CityLon + 0.003 }, endTime = DateTimeOffset.UtcNow.AddHours(2).ToString("O") },
+                new { id = "no-coords", description = "Parade on Main St", expectedEndAt = DateTimeOffset.UtcNow.AddHours(1).ToString("O") }
+            }
+        });
+
+        var closures = await (await _dispatcher.GetAsync($"/api/emergency/v1/incidents/{incident.Id}/road-closures"))
+            .ExpectAsync<List<NearbyRoadClosureDto>>(HttpStatusCode.OK);
+
+        Assert.Equal(new[] { "nested", "no-coords" }, closures.Select(c => c.Id));
+        Assert.Equal("Sinkhole", closures[0].Description);
+        Assert.True(closures[0].DistanceKm < 1.0);
+        Assert.NotNull(closures[0].ExpectedEndAt);
+        Assert.Null(closures[1].DistanceKm); // can't measure it, but the dispatcher still sees it
+    }
+
+    // TC-API-EXT-15
+    [Fact]
+    [Trait("Requirement", "ES-FR-025")]
+    public async Task Expense_IsAlwaysSentForEms_EvenIfTheCallerNamesAnotherDepartment()
+    {
+        Gateway.Respond(HttpMethod.Post, "/api/budget/v1/expenses", HttpStatusCode.Created, new { id = Guid.NewGuid() });
+
+        var response = await _admin.PostAsJsonAsync("/api/emergency/v1/budget/expenses",
+            new { departmentCode = "HR", amount = 75m, description = "Fuel" });
+
+        await response.ExpectAsync(HttpStatusCode.OK);
+        var sent = Gateway.Requests.Last(r => r.PathAndQuery == "/api/budget/v1/expenses");
+        Assert.Contains("\"departmentCode\":\"EMS\"", sent.Body);
+        Assert.DoesNotContain("\"HR\"", sent.Body);
+    }
+
+    // TC-API-EXT-16
+    [Fact]
+    [Trait("Requirement", "ES-FR-025")]
+    public async Task Expense_OverBudget_Returns400_WithBudgetsReason()
+    {
+        Gateway.Respond(HttpMethod.Post, "/api/budget/v1/expenses", HttpStatusCode.BadRequest,
+            new { error = "over_budget", message = "Expense exceeds the remaining EMS budget.", traceId = "t" });
+
+        var response = await _admin.PostAsJsonAsync("/api/emergency/v1/budget/expenses", Expense(999999m));
+
+        Assert.Equal("budget_rejected", await response.ExpectErrorAsync(HttpStatusCode.BadRequest));
+        Assert.Contains("exceeds the remaining EMS budget", await response.Content.ReadAsStringAsync());
+    }
+
+    // TC-API-EXT-17
+    [Fact]
+    [Trait("Requirement", "ES-NFR-004")]
+    public async Task Expense_WithMoreThanTwoDecimals_Returns400_AndIsNotSent()
+    {
+        var sentBefore = Gateway.Requests.Count(r => r.PathAndQuery == "/api/budget/v1/expenses");
+
+        var response = await _admin.PostAsJsonAsync("/api/emergency/v1/budget/expenses", Expense(10.005m));
+
+        Assert.Equal("invalid_amount", await response.ExpectErrorAsync(HttpStatusCode.BadRequest));
+        Assert.Equal(sentBefore, Gateway.Requests.Count(r => r.PathAndQuery == "/api/budget/v1/expenses"));
+    }
+
+    // TC-API-EXT-18
+    [Fact]
+    [Trait("Requirement", "ES-FR-025")]
+    public async Task FundingRequest_IsForwardedToBudget_AsUrgentEms()
+    {
+        Gateway.Respond(HttpMethod.Post, "/api/budget/v1/funding-requests", HttpStatusCode.Created,
+            new { id = Guid.NewGuid(), status = "Pending" });
+
+        var response = await _admin.PostAsJsonAsync("/api/emergency/v1/budget/funding-requests",
+            new { amount = 50000m, reason = "Winter storm overtime", urgent = true });
+
+        var json = await response.ExpectAsync<JsonElement>(HttpStatusCode.OK);
+        Assert.Equal("Pending", json.GetProperty("status").GetString());
+        var sent = Gateway.Requests.Last(r => r.PathAndQuery == "/api/budget/v1/funding-requests");
+        Assert.Contains("\"departmentCode\":\"EMS\"", sent.Body);
+        Assert.Contains("\"urgent\":true", sent.Body);
+        Assert.Contains("Winter storm overtime", sent.Body);
+        Assert.Equal($"Bearer {FakeServiceTokenProvider.Token}", sent.Authorization); // SH-S07
+    }
+
+    // TC-API-EXT-19
+    [Fact]
+    [Trait("Requirement", "ES-FR-025")]
+    public async Task FundingRequest_OnlyAdmin_CanAsk()
+    {
+        var response = await _dispatcher.PostAsJsonAsync("/api/emergency/v1/budget/funding-requests",
+            new { amount = 100m, reason = "x", urgent = false });
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 }

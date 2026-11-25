@@ -12,8 +12,8 @@ using MyApplication.Api.Data;
 namespace MyApplication.Api.Migrations;
 
 [DbContext(typeof(EmergencyDbContext))]
-[Migration("20261125163157_UpdateHospitalAndPatientTransport")]
-partial class _20261125163157_UpdateHospitalAndPatientTransport
+[Migration("20261125172830_UpdateHospitalModel")]
+partial class _20261125172830_UpdateHospitalModel
 {
     /// <inheritdoc />
     protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -132,21 +132,11 @@ partial class _20261125163157_UpdateHospitalAndPatientTransport
                 b.Property<Guid>("CreatedBy")
                     .HasColumnType("uniqueidentifier");
 
-                b.Property<int>("DeliveryAttempts")
-                    .HasColumnType("int");
-
                 b.Property<Guid>("HydrantId")
                     .HasColumnType("uniqueidentifier");
 
                 b.Property<Guid>("IncidentId")
                     .HasColumnType("uniqueidentifier");
-
-                b.Property<DateTime?>("LastAttempt")
-                    .HasColumnType("datetime2");
-
-                b.Property<string>("LastDeliveryError")
-                    .HasMaxLength(1000)
-                    .HasColumnType("nvarchar(1000)");
 
                 b.Property<double>("LitresUsed")
                     .HasColumnType("float");
@@ -162,11 +152,13 @@ partial class _20261125163157_UpdateHospitalAndPatientTransport
 
                 b.HasKey("Id");
 
-                b.HasIndex("IncidentId", "SentToMaintenanceAt");
+                b.HasIndex("IncidentId");
+
+                b.HasIndex("SentToMaintenanceAt");
 
                 b.ToTable("HydrantUsages", t =>
                     {
-                        t.HasCheckConstraint("CK_HydrantUsages_LitresUsed", "[LitresUsed] > 0");
+                        t.HasCheckConstraint("CK_HydrantUsages_LitresUsed", "[LitresUsed] >= 0");
                     });
             });
 
@@ -353,8 +345,8 @@ partial class _20261125163157_UpdateHospitalAndPatientTransport
 
                 b.Property<string>("TriageLevel")
                     .IsRequired()
-                    .HasMaxLength(40)
-                    .HasColumnType("nvarchar(40)");
+                    .HasMaxLength(30)
+                    .HasColumnType("nvarchar(30)");
 
                 b.Property<DateTime?>("UpdatedAt")
                     .HasColumnType("datetime2");
@@ -363,6 +355,8 @@ partial class _20261125163157_UpdateHospitalAndPatientTransport
                     .HasColumnType("uniqueidentifier");
 
                 b.HasKey("Id");
+
+                b.HasIndex("HospitalId");
 
                 b.HasIndex("IncidentId");
 
@@ -667,6 +661,12 @@ partial class _20261125163157_UpdateHospitalAndPatientTransport
 
         modelBuilder.Entity("MyApplication.Api.Models.PatientTransport", b =>
             {
+                b.HasOne("MyApplication.Api.Models.Hospital", null)
+                    .WithMany()
+                    .HasForeignKey("HospitalId")
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
+
                 b.HasOne("MyApplication.Api.Models.Incident", null)
                     .WithMany("PatientTransports")
                     .HasForeignKey("IncidentId")

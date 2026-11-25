@@ -22,4 +22,14 @@ public class FakeTransitClient : ITransitWarningClient
         _sent.Enqueue(notice);
         return Task.FromResult(ShouldSucceed);
     }
+
+    private readonly ConcurrentQueue<TransitIncidentNotice> _incidents = new();
+    /// <summary>Road-restricting incident notices we sent (ES-FR-015).</summary>
+    public IReadOnlyCollection<TransitIncidentNotice> SentIncidents => _incidents.ToArray();
+
+    public Task<bool> SendIncidentNoticeAsync(TransitIncidentNotice notice)
+    {
+        _incidents.Enqueue(notice);
+        return Task.FromResult(ShouldSucceed);
+    }
 }

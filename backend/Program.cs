@@ -10,6 +10,8 @@ using MyApplication.Api.Services;
 using System.Text.Json.Serialization;
 using MyApplication.Api.Dtos;
 using MyApplication.Api.Health;
+using MyApplication.Api.Auth;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -102,6 +104,9 @@ builder.Services.AddDbContext<EmergencyDbContext>(options =>
 // When Registration's real login is ready, put their issuer/key in the same section.
 builder.Services.AddAuthentication().AddJwtBearer();
 
+// Registration's plain roles (Manager, Dispatcher, User) -> our emergency:* roles. See appsettings "RoleMapping".
+builder.Services.AddTransient<IClaimsTransformation, RegistrationRoleMapper>();
+
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("EmergencyIncidentCreate", policy =>
@@ -147,57 +152,35 @@ builder.Services.AddHealthChecks()
 builder.Services.AddScoped<IServiceTokenProvider, DevelopmentServiceTokenProvider>();
 
 
-// Shared API gateway for external services
-var gateway = builder.Configuration["Services:GatewayBaseUrl"];
-
-
-// Transit integration – warning notices go through the API gateway (SH-A03)
-// with our service-account token (SH-S07), like the other integrations.
-builder.Services.AddHttpClient<ITransitWarningClient, TransitWarningClient>(http =>
+// Where other teams' services live (SH-A03, SH-A06).
+// Normally every call goes through the shared API gateway: Services__GatewayBaseUrl.
+// Until the class gateway exists, a team's own URL can be set instead and wins over the gateway, e.g.
+//   Services__BudgetBaseUrl=https://<budget-app>.azurewebsites.net/
+// Teams: Transit (warnings, incident notices, road closures), Budget, Hr.
+string? ServiceUrl(string team)
 {
-    if (!string.IsNullOrWhiteSpace(gateway))
-    {
-        http.BaseAddress = new Uri(gateway);
-    }
+    var url = builder.Configuration[$"Services:{team}BaseUrl"];
+    if (string.IsNullOrWhiteSpace(url)) url = builder.Configuration["Services:GatewayBaseUrl"];
+    if (string.IsNullOrWhiteSpace(url)) return null;
+    return url.EndsWith('/') ? url : url + "/"; // so "api/budget/v1/..." is added after any path in the URL
+}
 
-    http.Timeout = TimeSpan.FromSeconds(5);
-});
-
-
-// Budget / Finance integration
-builder.Services.AddHttpClient<BudgetFinanceClient>(http =>
+void UseService(HttpClient http, string team)
 {
-    if (!string.IsNullOrWhiteSpace(gateway))
-    {
-        http.BaseAddress = new Uri(gateway);
-    }
+    var url = ServiceUrl(team);
+    if (url != null) http.BaseAddress = new Uri(url);
+    http.Timeout = TimeSpan.FromSeconds(5); // SH-A07: give up after 5 s instead of hanging
+}
 
-    http.Timeout = TimeSpan.FromSeconds(5);
-});
+// Public Transport: weather notices, road-restricting incidents (ES-FR-015) and road closures (ES-FR-010)
+builder.Services.AddHttpClient<ITransitWarningClient, TransitWarningClient>(http => UseService(http, "Transit"));
+builder.Services.AddHttpClient<RoadClosureClient>(http => UseService(http, "Transit"));
 
+// Budget / Finance (ES-FR-025)
+builder.Services.AddHttpClient<BudgetFinanceClient>(http => UseService(http, "Budget"));
 
-// HR / Staff integration
-builder.Services.AddHttpClient<StaffHrClient>(http =>
-{
-    if (!string.IsNullOrWhiteSpace(gateway))
-    {
-        http.BaseAddress = new Uri(gateway);
-    }
-
-    http.Timeout = TimeSpan.FromSeconds(5);
-});
-
-
-// Maintenance / Road Closures integration
-builder.Services.AddHttpClient<RoadClosureClient>(http =>
-{
-    if (!string.IsNullOrWhiteSpace(gateway))
-    {
-        http.BaseAddress = new Uri(gateway);
-    }
-
-    http.Timeout = TimeSpan.FromSeconds(5);
-});
+// HR / Staff (ES-FR-026)
+builder.Services.AddHttpClient<StaffHrClient>(http => UseService(http, "Hr"));
 
 builder.Services.AddScoped<IPatientTransportService, PatientTransportService>();
 
@@ -231,6 +214,16 @@ if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
             Thread.Sleep(5000);
         }
     }
+}
+
+// Demo data for a fresh database (SH-D03): stations, units and hospitals.
+// Only fills EMPTY tables, so it is safe on every startup. Off unless Database__SeedOnStartup=true.
+if (app.Configuration.GetValue<bool>("Database:SeedOnStartup"))
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<EmergencyDbContext>();
+    var added = await SeedData.SeedAsync(db);
+    app.Logger.LogInformation("Seed data: {Added} rows added (0 = already seeded).", added);
 }
 
 

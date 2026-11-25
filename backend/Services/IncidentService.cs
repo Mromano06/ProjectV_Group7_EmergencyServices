@@ -163,7 +163,7 @@ public sealed class IncidentService(EmergencyDbContext db) : IIncidentService
 
     private static IncidentSummaryDto Summarize(Incident i) => new(
         i.Id, i.Type.ToString(), (int)i.Severity, i.Status.ToString(),
-        i.Location.Latitude, i.Location.Longitude, i.ReportedAt);
+        i.Location.Latitude, i.Location.Longitude, i.ReportedAt, i.Location.Address, i.Description);
 
     private static IncidentDetailDto Detail(Incident i) => new(
         i.Id, i.Type.ToString(), (int)i.Severity, i.Status.ToString(),
