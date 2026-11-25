@@ -210,6 +210,7 @@ public class ExternalServicesApiTests : IClassFixture<EmergencyApiFactory>
         var near = Assert.Single(closures);
         Assert.Equal("near", near.Id);
         Assert.True(near.DistanceKm < 1.0);
+        Assert.Equal("distance", near.MatchedBy);
         Assert.NotNull(near.ExpectedEndAt);
     }
 
@@ -239,26 +240,50 @@ public class ExternalServicesApiTests : IClassFixture<EmergencyApiFactory>
     // TC-API-EXT-14
     [Fact]
     [Trait("Requirement", "ES-FR-010")]
-    public async Task RoadClosures_AcceptNestedLocation_AndKeepClosuresWithoutCoordinates()
+    public async Task RoadClosures_InTransitsShape_AreShown_WhenTheyNameTheIncidentsStreet()
     {
-        var incident = await _dispatcher.CreateIncidentAsync();
-        Gateway.Respond(HttpMethod.Get, RoadClosuresPath, HttpStatusCode.OK, new
+        // Transit's Swagger (Nov 25): DisruptionResponse[], snake_case, no coordinates.
+        var incident = await _dispatcher.CreateIncidentAsync(); // "100 King St W"
+        var endsAt = DateTimeOffset.UtcNow.AddHours(2);
+        Gateway.Respond(HttpMethod.Get, RoadClosuresPath, HttpStatusCode.OK, new object[]
         {
-            items = new object[]
-            {
-                new { id = "nested", reason = "Sinkhole", location = new { latitude = TestData.CityLat, longitude = TestData.CityLon + 0.003 }, endTime = DateTimeOffset.UtcNow.AddHours(2).ToString("O") },
-                new { id = "no-coords", description = "Parade on Main St", expectedEndAt = DateTimeOffset.UtcNow.AddHours(1).ToString("O") }
-            }
+            new { id = 11, title = "Water main repair", affected_area = "King Street West between Ainslie and Water",
+                  affected_segments = Array.Empty<string>(), status = "active", type = "road_closure",
+                  end_time = endsAt.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'") },
+            new { id = 12, title = "Paving", affected_area = "Downtown", affected_segments = new[] { "King St" },
+                  status = "active", type = "road_closure" },                          // plain "King St" matches too
+            new { id = 13, title = "Bridge work", affected_area = "Main St bridge", affected_segments = new[] { "Main St" },
+                  status = "active", type = "road_closure" }                           // another street: left out
         });
 
         var closures = await (await _dispatcher.GetAsync($"/api/emergency/v1/incidents/{incident.Id}/road-closures"))
             .ExpectAsync<List<NearbyRoadClosureDto>>(HttpStatusCode.OK);
 
-        Assert.Equal(new[] { "nested", "no-coords" }, closures.Select(c => c.Id));
-        Assert.Equal("Sinkhole", closures[0].Description);
-        Assert.True(closures[0].DistanceKm < 1.0);
-        Assert.NotNull(closures[0].ExpectedEndAt);
-        Assert.Null(closures[1].DistanceKm); // can't measure it, but the dispatcher still sees it
+        Assert.Equal(new[] { "11", "12" }, closures.Select(c => c.Id));
+        Assert.All(closures, c => Assert.Equal("street", c.MatchedBy));
+        Assert.Equal("Water main repair – King Street West between Ainslie and Water", closures[0].Description);
+        Assert.Equal(endsAt.ToUnixTimeSeconds(), closures[0].ExpectedEndAt!.Value.ToUnixTimeSeconds()); // expected end time
+        Assert.Null(closures[0].DistanceKm);
+    }
+
+    // TC-API-EXT-22
+    [Fact]
+    [Trait("Requirement", "ES-FR-010")]
+    public async Task RoadClosures_ThatHaveEnded_AreLeftOut()
+    {
+        var incident = await _dispatcher.CreateIncidentAsync(); // "100 King St W"
+        Gateway.Respond(HttpMethod.Get, RoadClosuresPath, HttpStatusCode.OK, new object[]
+        {
+            new { id = 21, title = "Done", affected_area = "King St W", status = "resolved" },
+            new { id = 22, title = "Past", affected_area = "King St W", status = "active",
+                  end_time = DateTimeOffset.UtcNow.AddHours(-1).ToString("yyyy-MM-dd'T'HH:mm:ss'Z'") },
+            new { id = 23, title = "Still closed", affected_area = "King St W", status = "active" }
+        });
+
+        var closures = await (await _dispatcher.GetAsync($"/api/emergency/v1/incidents/{incident.Id}/road-closures"))
+            .ExpectAsync<List<NearbyRoadClosureDto>>(HttpStatusCode.OK);
+
+        Assert.Equal("23", Assert.Single(closures).Id);
     }
 
     // TC-API-EXT-15

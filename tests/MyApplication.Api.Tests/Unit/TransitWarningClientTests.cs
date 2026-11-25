@@ -103,14 +103,16 @@ public class TransitWarningClientTests
     // TC-TRN-05
     [Fact]
     [Trait("Requirement", "SH-S07")]
-    public async Task NoServiceToken_ReturnsFalse_WithoutSendingAnything()
+    public async Task NoServiceToken_StillSends_WithoutAnAuthorizationHeader()
     {
+        // Registration has no service accounts yet, so notices go out without a token rather than not at all.
         var gateway = new FakeGateway();
+        gateway.Respond(HttpMethod.Post, GatewayPath, HttpStatusCode.Accepted);
 
         var sent = await MakeClient(gateway, tokens: new MissingTokenProvider()).SendWarningNoticeAsync(Notice);
 
-        Assert.False(sent);
-        Assert.Empty(gateway.Requests);
+        Assert.True(sent);
+        Assert.Null(Assert.Single(gateway.Requests).Authorization);
     }
 
     // TC-TRN-06
@@ -121,42 +123,60 @@ public class TransitWarningClientTests
         Assert.False(await MakeClient(new UnreachableHandler()).SendWarningNoticeAsync(Notice));
     }
 
-    // ---------- Road-restricting incident notices (ES-FR-015) ----------
+    // ---------- Road-restricting incidents (ES-FR-015, PT-FR-019) ----------
 
-    private static readonly TransitIncidentNotice IncidentNotice = new(
-        Guid.NewGuid(), "Fire", 43.36, -80.31, "100 Main St, Cambridge, ON",
-        "Main St between Water and Ainslie", "Full closure", DateTime.UtcNow.AddHours(3), DateTime.UtcNow);
+    private static readonly TransitEmergencyIncident Incident = new(
+        ExternalId: Guid.NewGuid().ToString(),
+        ExternalReference: "EMS-1234ABCD",
+        Title: "Fire emergency – Full closure",
+        Description: "Full closure: Main St between Water and Ainslie. Reported by Emergency Services.",
+        Type: "road_closure",
+        IncidentType: "fire",
+        Severity: "high",
+        Status: "active",
+        AffectedArea: "Main St between Water and Ainslie",
+        AffectedSegments: ["Main St"],
+        Latitude: 43.3601,
+        Longitude: -80.3123,
+        RadiusMeters: 250,
+        StartTime: TransitEmergencyIncident.Rfc3339(new DateTime(2026, 11, 25, 22, 30, 0, DateTimeKind.Utc)),
+        EndTime: TransitEmergencyIncident.Rfc3339(new DateTime(2026, 11, 26, 1, 30, 0, DateTimeKind.Utc)));
 
     // TC-TRN-07
     [Fact]
     [Trait("Requirement", "ES-FR-015")]
-    public async Task IncidentNotice_GoesToTheEmergencyNoticesPath_WithLocationAreaTypeAndEnd()
+    public async Task Incident_GoesToTransitsEmergencyIntegration_InTheirSnakeCaseShape()
     {
         var gateway = new FakeGateway();
-        gateway.Respond(HttpMethod.Post, "/" + TransitWarningClient.DefaultIncidentPath, HttpStatusCode.Created);
+        gateway.Respond(HttpMethod.Post, "/" + TransitWarningClient.DefaultEmergencyIncidentPath, HttpStatusCode.Created);
 
-        var sent = await MakeClient(gateway).SendIncidentNoticeAsync(IncidentNotice);
+        var sent = await MakeClient(gateway).SendEmergencyIncidentAsync(Incident);
 
         Assert.True(sent);
         var request = Assert.Single(gateway.Requests);
-        Assert.Equal("/api/transit/v1/disruptions/emergency-notices", request.PathAndQuery); // SH-C13
-        Assert.Equal($"Bearer {FakeServiceTokenProvider.Token}", request.Authorization);   // SH-S07
-        Assert.Contains(IncidentNotice.IncidentId.ToString(), request.Body);
-        Assert.Contains("\"latitude\":43.36", request.Body);
-        Assert.Contains("\"affectedArea\":\"Main St between Water and Ainslie\"", request.Body);
-        Assert.Contains("\"restrictionType\":\"Full closure\"", request.Body);
-        Assert.Contains("\"estimatedEndAt\"", request.Body);
+        Assert.Equal("/api/transport/v1/integrations/emergency/incidents", request.PathAndQuery); // Transit Swagger, PT-FR-019
+        Assert.Contains($"\"external_id\":\"{Incident.ExternalId}\"", request.Body);
+        Assert.Contains("\"affected_area\":\"Main St between Water and Ainslie\"", request.Body);
+        Assert.Contains("\"affected_segments\":[\"Main St\"]", request.Body);
+        Assert.Contains("\"latitude\":43.3601", request.Body);
+        Assert.Contains("\"radius_meters\":250", request.Body);
+        Assert.Contains("\"start_time\":\"2026-11-25T22:30:00Z\"", request.Body);   // RFC 3339, UTC (SH-I04)
+        Assert.Contains("\"end_time\":\"2026-11-26T01:30:00Z\"", request.Body);
+        Assert.DoesNotContain("externalId", request.Body);                         // no camelCase names
     }
 
     // TC-TRN-08
-    [Fact]
+    [Theory]
+    [InlineData(HttpStatusCode.BadRequest)]
+    [InlineData(HttpStatusCode.Unauthorized)] // Transit's write endpoints want an admin browser session for now
+    [InlineData(HttpStatusCode.Forbidden)]
     [Trait("Requirement", "SH-A07")]
-    public async Task IncidentNotice_TransitError_ReturnsFalse()
+    public async Task Incident_TransitRefuses_ReturnsFalse(HttpStatusCode status)
     {
         var gateway = new FakeGateway();
-        gateway.Respond(HttpMethod.Post, "/" + TransitWarningClient.DefaultIncidentPath, HttpStatusCode.BadRequest);
+        gateway.Respond(HttpMethod.Post, "/" + TransitWarningClient.DefaultEmergencyIncidentPath, status, new { error = "no" });
 
-        Assert.False(await MakeClient(gateway).SendIncidentNoticeAsync(IncidentNotice));
+        Assert.False(await MakeClient(gateway).SendEmergencyIncidentAsync(Incident));
     }
 
     private sealed class MissingTokenProvider : IServiceTokenProvider

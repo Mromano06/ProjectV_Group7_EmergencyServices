@@ -29,7 +29,8 @@ public sealed class IncidentRoadClosuresController(EmergencyDbContext db, RoadCl
         if (incident is null) return Error(404, "incident_not_found", "Incident not found.");
         try
         {
-            return Ok(await roadClosures.GetNearbyAsync(incident.Location.Latitude, incident.Location.Longitude, ct));
+            return Ok(await roadClosures.GetNearbyAsync(
+                incident.Location.Latitude, incident.Location.Longitude, incident.Location.Address, ct));
         }
         catch (ExternalServiceException ex)
         { return Error(ex.HttpStatus, "road_closures_unavailable", ex.Message); }
