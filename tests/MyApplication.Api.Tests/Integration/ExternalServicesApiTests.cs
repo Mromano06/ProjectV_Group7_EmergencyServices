@@ -47,13 +47,13 @@ public class ExternalServicesApiTests : IClassFixture<EmergencyApiFactory>
     [Trait("Requirement", "SH-C08")]
     public async Task Budget_ShowsTheAllocationFromTheBudgetService_UsingTheServiceAccount()
     {
-        Gateway.Respond(HttpMethod.Get, "/api/budget/v1/allocations/emergency", HttpStatusCode.OK,
+        Gateway.Respond(HttpMethod.Get, "/api/budget/v1/allocations/EMS", HttpStatusCode.OK,
             new { allocated = 500000, spent = 125000, currency = "CAD" });
 
         var json = await (await _viewer.GetAsync("/api/emergency/v1/budget")).ExpectAsync<JsonElement>(HttpStatusCode.OK);
 
         Assert.Equal(500000, json.GetProperty("allocated").GetInt32());
-        var sent = Gateway.Requests.Last(r => r.PathAndQuery == "/api/budget/v1/allocations/emergency");
+        var sent = Gateway.Requests.Last(r => r.PathAndQuery == "/api/budget/v1/allocations/EMS");
         Assert.Equal($"Bearer {FakeServiceTokenProvider.Token}", sent.Authorization); // SH-S07
     }
 
@@ -62,7 +62,7 @@ public class ExternalServicesApiTests : IClassFixture<EmergencyApiFactory>
     [Trait("Requirement", "SH-A07")]
     public async Task Budget_WhenBudgetServiceFails_Returns502_NotACrash()
     {
-        Gateway.Respond(HttpMethod.Get, "/api/budget/v1/allocations/emergency", HttpStatusCode.InternalServerError);
+        Gateway.Respond(HttpMethod.Get, "/api/budget/v1/allocations/EMS", HttpStatusCode.InternalServerError);
 
         var response = await _viewer.GetAsync("/api/emergency/v1/budget");
 
@@ -333,5 +333,35 @@ public class ExternalServicesApiTests : IClassFixture<EmergencyApiFactory>
             new { amount = 100m, reason = "x", urgent = false });
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    // TC-API-EXT-20
+    [Fact]
+    [Trait("Requirement", "ES-FR-025")]
+    public async Task Expense_ThatBudgetAnswersWithApprovedFalse_Returns400_WithBudgetsMessage()
+    {
+        // Budget's ExpenseResult: { approved, message, remainingBudget, expense } (live Swagger, Nov 25).
+        Gateway.Respond(HttpMethod.Post, "/api/budget/v1/expenses", HttpStatusCode.OK,
+            new { approved = false, message = "Over the remaining EMS budget.", remainingBudget = 10m });
+
+        var response = await _admin.PostAsJsonAsync("/api/emergency/v1/budget/expenses", Expense(500m));
+
+        Assert.Equal("budget_rejected", await response.ExpectErrorAsync(HttpStatusCode.BadRequest));
+        Assert.Contains("Over the remaining EMS budget.", await response.Content.ReadAsStringAsync());
+    }
+
+    // TC-API-EXT-21
+    [Fact]
+    [Trait("Requirement", "ES-FR-025")]
+    public async Task ApprovedExpense_ReturnsBudgetsResult()
+    {
+        Gateway.Respond(HttpMethod.Post, "/api/budget/v1/expenses", HttpStatusCode.Created,
+            new { approved = true, message = "Expense Approved", remainingBudget = 4499000m });
+
+        var json = await (await _admin.PostAsJsonAsync("/api/emergency/v1/budget/expenses", Expense(1000m)))
+            .ExpectAsync<JsonElement>(HttpStatusCode.OK);
+
+        Assert.True(json.GetProperty("approved").GetBoolean());
+        Assert.Equal(4499000m, json.GetProperty("remainingBudget").GetDecimal());
     }
 }
