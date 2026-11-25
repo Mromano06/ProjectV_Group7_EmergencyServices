@@ -53,9 +53,9 @@ public class Incident : AuditableEntity
     /// <summary> related after action report for incident </summary>
     public AfterActionReport? Report { get; set; }
 
-    /// <summary> related water hydrant usage for incident </summary>
-    public HydrantUsage? HydrUsage { get; set; }
+    /// <summary> hydrants used at the incident (a fire can use more than one) </summary>
+    public List<HydrantUsage> HydrantUsages { get; set; } = [];
 
     /// <summary> list of patient transports related to the incident </summary>
-    public List<PatientTransport> patients { get; set; } = [];
+    public List<PatientTransport> PatientTransports { get; set; } = [];
 }

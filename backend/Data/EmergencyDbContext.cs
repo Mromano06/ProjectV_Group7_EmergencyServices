@@ -32,6 +32,10 @@ public class EmergencyDbContext : DbContext
     // Hospitals
     public DbSet<Hospital> Hospitals => Set<Hospital>();
 
+    // Patients taken to hospital (ES-FR-014) and hydrant water used (ES-FR-016)
+    public DbSet<PatientTransport> PatientTransports => Set<PatientTransport>();
+    public DbSet<HydrantUsage> HydrantUsages => Set<HydrantUsage>();
+
     // Add other tables here, e.g.
     // public DbSet<Incident> Incidents => Set<Incident>();
 
@@ -201,6 +205,33 @@ public class EmergencyDbContext : DbContext
             e.Property(x => x.Outcome).HasMaxLength(1000).IsRequired();
             e.Property(x => x.Notes).HasMaxLength(4000);
             e.Property(x => x.FiledAt).HasConversion(utc);
+        });
+
+        // Patient transport (ES-FR-014): triage level and destination hospital only,
+        // no medical history. ResidentId belongs to Registration, so it has no FK (SH-D02).
+        modelBuilder.Entity<PatientTransport>(e =>
+        {
+            e.ToTable("PatientTransports");
+            e.Property(x => x.TriageLevel).HasConversion<string>().HasMaxLength(30);
+            e.HasIndex(x => x.IncidentId);
+            e.HasOne<Incident>().WithMany(i => i.PatientTransports)
+                .HasForeignKey(x => x.IncidentId).OnDelete(DeleteBehavior.Restrict);
+            // Hospitals live in our own database, so an unknown hospital ID is rejected.
+            e.HasOne<Hospital>().WithMany()
+                .HasForeignKey(x => x.HospitalId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Hydrant usage (ES-FR-016): one row per hydrant used, so a fire can use several.
+        // HydrantId belongs to Maintenance, so it has no FK.
+        modelBuilder.Entity<HydrantUsage>(e =>
+        {
+            e.ToTable("HydrantUsages", t => t.HasCheckConstraint(
+                "CK_HydrantUsages_LitresUsed", "[LitresUsed] >= 0"));
+            e.HasIndex(x => x.IncidentId);
+            // Finds usage reports that still need to be sent / retried.
+            e.HasIndex(x => x.SentToMaintenanceAt);
+            e.HasOne<Incident>().WithMany(i => i.HydrantUsages)
+                .HasForeignKey(x => x.IncidentId).OnDelete(DeleteBehavior.Restrict);
         });
 
          // Every DateTime comes back marked as UTC, so JSON dates end in "Z" (SH-I04).

@@ -114,8 +114,8 @@ public sealed record StatsDto(
 /// holds the information for a patient transport
 /// </summary>
 /// <param name="IncidentId">id of incident</param>
-/// <param name="triagelvl">triage level of patient</param>
+/// <param name="TriageLevel">triage level of patient</param>
 /// <param name="HospitalId">hospital id patient was sent to</param>
 /// <param name="ResidentId">resident id of patient</param>
 public sealed record PatientTransportDto(
-    Guid IncidentId, TriageLevel triagelvl, Guid HospitalId, Guid? ResidentId);
+    Guid IncidentId, TriageLevel TriageLevel, Guid HospitalId, Guid? ResidentId);

@@ -17,6 +17,9 @@ public class HydrantUsage : AuditableEntity
     /// <summary> litres of water used from hydrant </summary>
     public double LitresUsed { get; set; }
 
-    /// <summary> timestamp for maintenance </summary>
-    public DateTime SentToMaintenanceAt { get; set; }
+    /// <summary>
+    /// when Maintenance accepted the usage report (ES-FR-016).
+    /// null = not sent yet, so a failed send can be retried later.
+    /// </summary>
+    public DateTime? SentToMaintenanceAt { get; set; }
 }
