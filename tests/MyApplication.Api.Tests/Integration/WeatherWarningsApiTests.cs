@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using MyApplication.Api.Models;
+using MyApplication.Api.Dtos;
 
 namespace MyApplication.Api.Tests.Integration;
 

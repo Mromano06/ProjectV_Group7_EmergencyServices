@@ -3,6 +3,7 @@ using MyApplication.Api.Clients;
 using MyApplication.Api.Data;
 using MyApplication.Api.Enums;
 using MyApplication.Api.Models;
+using MyApplication.Api.Dtos;
 
 namespace MyApplication.Api.Services;
 

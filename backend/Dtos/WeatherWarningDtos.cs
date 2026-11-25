@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using MyApplication.Api.Enums;
+using MyApplication.Api.Models; 
 
 namespace MyApplication.Api.Dtos;
 

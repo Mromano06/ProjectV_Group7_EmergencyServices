@@ -8,6 +8,7 @@ using MyApplication.Api.Data;
 using MyApplication.Api.Models;
 using MyApplication.Api.Services;
 using System.Text.Json.Serialization;
+using MyApplication.Api.Dtos;
 
 var builder = WebApplication.CreateBuilder(args);
 
