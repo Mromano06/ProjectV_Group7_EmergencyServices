@@ -13,7 +13,7 @@ import type {
 } from '../types/models';
 import { buildCompletionLog, rollDeaths } from '../utils/CallOutcome';
 import { estimateTravelMs, getProgress } from '../utils/DispatchMath';
-import { SEVERITY_LABEL, formatDuration, parseUtc } from '../utils/Labels';
+import { SEVERITY_LABEL, formatDuration, formatUntil } from '../utils/Labels';
 
 // How often the console asks the API for fresh data. ES-FR-004: a new incident must
 // appear within 15 seconds without reloading the page.
@@ -103,7 +103,7 @@ function noticeLog(n: EmergencyNotice): NewLog {
 }
 
 function warningLog(w: WeatherWarning, now: number): NewLog {
-  const until = parseUtc(w.endsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const until = formatUntil(w.endsAt, now);
   return {
     time: now,
     level: w.severity === 'Warning' ? 'danger' : w.severity === 'Watch' ? 'warning' : 'info',

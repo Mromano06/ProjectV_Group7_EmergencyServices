@@ -213,7 +213,34 @@ describe('Dispatch console (talking to the API)', () => {
     }]);
     showApp();
 
-    expect(await screen.findByRole('heading', { name: 'Freezing Rain' })).toBeInTheDocument();
-    expect(screen.getByText('This warning affects transit.')).toBeInTheDocument();
+    const bar = await screen.findByRole('region', { name: 'Active weather warnings' });
+    expect(await within(bar).findByText('Freezing Rain')).toBeInTheDocument();
+    expect(within(bar).getByText(/affects transit/)).toBeInTheDocument();
+  });
+
+  it('shows the most serious warning first, with an end time that names the day', async () => {
+    const soon = new Date(Date.now() + 3600_000).toISOString();
+    const tomorrow = new Date(Date.now() + 26 * 3600_000).toISOString();
+    api.activeWarnings.mockResolvedValue([
+      { id: 'w-a', type: 'Fog', severity: 'Advisory', area: 'North end', description: null,
+        startsAt: soon, endsAt: soon, status: 'Active', source: 'Simulated', affectsTransit: false },
+      { id: 'w-w', type: 'Blizzard', severity: 'Warning', area: 'City-wide', description: null,
+        startsAt: soon, endsAt: tomorrow, status: 'Active', source: 'Simulated', affectsTransit: true },
+    ]);
+    showApp();
+
+    const bar = await screen.findByRole('region', { name: 'Active weather warnings' });
+    const chips = await within(bar).findAllByRole('listitem');
+    expect(chips[0]).toHaveTextContent('Blizzard');
+    expect(chips[0]).toHaveClass('wx-Warning');
+    expect(chips[1]).toHaveTextContent('Fog');
+    expect(chips[0]).toHaveTextContent(/until (tomorrow|\w{3}, \w{3} \d+,)/); // never just a bare time
+  });
+
+  it('says when there are no active warnings, and shows the signed-in user', async () => {
+    showApp('Dispatcher');
+
+    expect(await screen.findByText('No active weather warnings')).toBeInTheDocument();
+    expect(screen.getByText(/\(Dispatcher\)/)).toBeInTheDocument();
   });
 });
