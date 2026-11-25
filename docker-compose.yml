@@ -44,6 +44,14 @@ services:
       Authentication__Schemes__Bearer__SigningKeys__0__Value: "${JWT_SIGNING_KEY}"
     ports:
       - "5000:8080"   # your computer's port 5000 -> the API's port 8080
+    healthcheck:
+      # Calls GET /health inside the container (ES-NFR-001). The .NET image has no curl,
+      # so bash opens the connection itself. `docker compose ps` then shows (healthy).
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /health HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && head -n 1 <&3 | grep -q ' 200 '"]
+      interval: 15s
+      timeout: 6s
+      retries: 5
+      start_period: 30s
 
   # ---------- The React app (frontend/Dockerfile) ----------
   frontend:
