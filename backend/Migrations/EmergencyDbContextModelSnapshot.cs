@@ -16,7 +16,7 @@ partial class EmergencyDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261125145906_AddPatientTransportAndHydrantUsage";
+    public override string LastMigrationId => "20261125172830_UpdateHospitalModel";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -89,32 +89,24 @@ partial class EmergencyDbContextModelSnapshot : ModelSnapshot
                     .ValueGeneratedOnAdd()
                     .HasColumnType("uniqueidentifier");
 
+                b.Property<int>("AvailableBeds")
+                    .HasColumnType("int");
+
                 b.Property<DateTime>("CreatedAt")
                     .HasColumnType("datetime2");
 
                 b.Property<Guid>("CreatedBy")
                     .HasColumnType("uniqueidentifier");
 
-                b.Property<string>("Location")
+                b.Property<string>("ErStatus")
                     .IsRequired()
-                    .HasMaxLength(500)
-                    .HasColumnType("nvarchar(500)");
+                    .HasMaxLength(30)
+                    .HasColumnType("nvarchar(30)");
 
                 b.Property<string>("Name")
                     .IsRequired()
                     .HasMaxLength(200)
                     .HasColumnType("nvarchar(200)");
-
-                b.Property<int>("OccupiedRooms")
-                    .HasColumnType("int");
-
-                b.Property<string>("Status")
-                    .IsRequired()
-                    .HasMaxLength(30)
-                    .HasColumnType("nvarchar(30)");
-
-                b.Property<int>("TotalRooms")
-                    .HasColumnType("int");
 
                 b.Property<DateTime?>("UpdatedAt")
                     .HasColumnType("datetime2");
@@ -126,7 +118,7 @@ partial class EmergencyDbContextModelSnapshot : ModelSnapshot
 
                 b.ToTable("Hospitals", t =>
                     {
-                        t.HasCheckConstraint("CK_Hospitals_Capacity", "[TotalRooms] >= 0 AND [OccupiedRooms] >= 0 AND [OccupiedRooms] <= [TotalRooms]");
+                        t.HasCheckConstraint("CK_Hospitals_AvailableBeds", "[AvailableBeds] >= 0");
                     });
             });
 
@@ -564,6 +556,38 @@ partial class EmergencyDbContextModelSnapshot : ModelSnapshot
                     .IsRequired();
 
                 b.Navigation("Incident");
+            });
+
+        modelBuilder.Entity("MyApplication.Api.Models.Hospital", b =>
+            {
+                b.OwnsOne("MyApplication.Api.Models.Location", "Location", b1 =>
+                    {
+                        b1.Property<Guid>("HospitalId")
+                            .HasColumnType("uniqueidentifier");
+
+                        b1.Property<string>("Address")
+                            .HasMaxLength(500)
+                            .HasColumnType("nvarchar(500)")
+                            .HasColumnName("Address");
+
+                        b1.Property<double>("Latitude")
+                            .HasColumnType("float")
+                            .HasColumnName("Latitude");
+
+                        b1.Property<double>("Longitude")
+                            .HasColumnType("float")
+                            .HasColumnName("Longitude");
+
+                        b1.HasKey("HospitalId");
+
+                        b1.ToTable("Hospitals");
+
+                        b1.WithOwner()
+                            .HasForeignKey("HospitalId");
+                    });
+
+                b.Navigation("Location")
+                    .IsRequired();
             });
 
         modelBuilder.Entity("MyApplication.Api.Models.HydrantUsage", b =>

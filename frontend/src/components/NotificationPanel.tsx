@@ -15,11 +15,12 @@ const TYPE_ICON: Record<IncidentType, string> = {
   Fire: '/units/houseonfire.png',
   Medical: '/units/medical.png', 
   Rescue: '🆘',
+  Hazmat: '☣️',
   Other: '❗',
 };
 
 const UNIT_ICON: Record<UnitType, string> = {
-  FireTruck: '🚒', Ladder: '🪜', Ambulance: '🚑',
+  Engine: '🚒', Ladder: '🪜', Ambulance: '🚑',
 };
 
 function formatAge(ms: number) {
@@ -58,8 +59,8 @@ export default function NotificationsPanel() {
           Notifications ({notices.length})
           {criticalCount > 0 && <span className="critical-count">{criticalCount} critical</span>}
         </h2>
-        {import.meta.env.DEV && (
-          <button className="panel-btn" onClick={addTestNotice}>+ Test call</button>
+        {canManage && (
+          <button className="panel-btn" onClick={() => void addTestNotice()}>+ Test call</button>
         )}
       </header>
 

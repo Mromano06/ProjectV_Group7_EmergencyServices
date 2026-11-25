@@ -1,5 +1,5 @@
 import { useAuth } from '../auth/AuthContext';
-import { canManageDispatch } from '../auth/Permissions';
+import { canManageDispatch, isAdmin } from '../auth/Permissions';
 import { useDispatchStore } from '../state/DispatchContext';
 import type { LogEntry, LogLevel } from '../types/models';
 import { formatClock } from '../utils/Labels';
@@ -24,8 +24,8 @@ export default function LogPanel() {
       <header className="panel-header">
         <h2>Event log ({logs.length})</h2>
         <div className="panel-header-actions">
-          {import.meta.env.DEV && (
-            <button className="panel-btn" onClick={addTestWarning}>+ Test weather</button>
+          {isAdmin(user.role) && (
+            <button className="panel-btn" onClick={() => void addTestWarning()}>+ Test weather</button>
           )}
           {canManage && <button className="panel-btn" onClick={clearLog}>Clear</button>}
         </div>

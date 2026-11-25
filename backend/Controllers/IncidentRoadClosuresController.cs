@@ -13,7 +13,7 @@ namespace MyApplication.Api.Controllers;
 [ApiController]
 [Route("api/emergency/v1/incidents/{incidentId:guid}/road-closures")]
 [Authorize(Roles = "emergency:Admin,emergency:Dispatcher,emergency:Responder")]
-public sealed class IncidentRoadClosuresController(EmergencyDbContext db, RoadClosureClient maintenance)
+public sealed class IncidentRoadClosuresController(EmergencyDbContext db, RoadClosureClient roadClosures)
     : OperationsControllerBase
 {
     /// <summary>
@@ -29,9 +29,9 @@ public sealed class IncidentRoadClosuresController(EmergencyDbContext db, RoadCl
         if (incident is null) return Error(404, "incident_not_found", "Incident not found.");
         try
         {
-            return Ok(await maintenance.GetNearbyAsync(incident.Location.Latitude, incident.Location.Longitude, ct));
+            return Ok(await roadClosures.GetNearbyAsync(incident.Location.Latitude, incident.Location.Longitude, ct));
         }
         catch (ExternalServiceException ex)
-        { return Error(ex.HttpStatus, "maintenance_unavailable", ex.Message); }
+        { return Error(ex.HttpStatus, "road_closures_unavailable", ex.Message); }
     }
 }

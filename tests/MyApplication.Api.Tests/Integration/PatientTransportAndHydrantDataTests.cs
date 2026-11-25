@@ -29,9 +29,9 @@ public class PatientTransportAndHydrantDataTests : IClassFixture<EmergencyApiFac
         var hospital = new Hospital
         {
             Name = "Test Hospital " + Guid.NewGuid().ToString("N")[..6],
-            Location = "835 King St W, Kitchener",
-            TotalRooms = 10,
-            OccupiedRooms = 2
+            Location = new Location { Latitude = 43.45, Longitude = -80.49, Address = "835 King St W, Kitchener" },
+            ErStatus = HospitalStatus.Open,
+            AvailableBeds = 8
         };
         await _factory.SeedAsync(db => db.Hospitals.Add(hospital));
         return hospital;

@@ -6,7 +6,7 @@ import '../styles/Panels.css';
 
 export default function AvailableUnits() {
   const { user } = useAuth();
-  const { units, notices, selectedNoticeId, selectedUnitId, selectUnit, sendSelected } =
+  const { units, notices, selectedNoticeId, selectedUnitId, selectUnit, sendSelected, busy } =
     useDispatchStore();
   const canManage = canManageDispatch(user.role);
 
@@ -16,7 +16,7 @@ export default function AvailableUnits() {
 
   const notice = notices.find((n) => n.id === selectedNoticeId) ?? null;
   const selectedUnit = available.find((u) => u.id === selectedUnitId) ?? null;
-  const canSend = canManage && notice !== null && selectedUnit !== null;
+  const canSend = canManage && !busy && notice !== null && selectedUnit !== null;
   const mismatch = notice && selectedUnit && selectedUnit.type !== notice.requiredUnitType;
 
   return (
@@ -74,8 +74,8 @@ export default function AvailableUnits() {
 
       {canManage && (
         <footer className="panel-footer">
-          <button className="send-btn" disabled={!canSend} onClick={sendSelected}>
-            {selectedUnit ? `Send ${selectedUnit.callSign}` : 'Send'}
+          <button className="send-btn" disabled={!canSend} onClick={() => void sendSelected()}>
+            {busy ? 'Sending…' : selectedUnit ? `Send ${selectedUnit.callSign}` : 'Send'}
           </button>
         </footer>
       )}

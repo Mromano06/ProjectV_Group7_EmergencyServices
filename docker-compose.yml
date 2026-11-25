@@ -38,6 +38,16 @@ services:
       ConnectionStrings__EmergencyDb: "Server=db,1433;Database=EmergencyDb;User Id=sa;Password=${SA_PASSWORD:-YourStrong!Passw0rd};TrustServerCertificate=True"
       # Create/update the tables automatically on startup (see Program.cs).
       Database__MigrateOnStartup: "true"
+      # Add demo stations, units and hospitals to empty tables (SH-D03, backend/Data/SeedData.cs).
+      Database__SeedOnStartup: "true"
+      # Other teams' services. Use the class gateway once it exists, or each team's own URL until then
+      # (a team URL wins over the gateway). Put the real values in .env, e.g. BUDGET_URL=https://...
+      Services__GatewayBaseUrl: "${GATEWAY_URL:-}"
+      Services__BudgetBaseUrl: "${BUDGET_URL:-}"
+      Services__TransitBaseUrl: "${TRANSIT_URL:-}"
+      Services__HrBaseUrl: "${HR_URL:-}"
+      # Service-account token we send to other teams (SH-S07) – put it in .env, never in this file.
+      ServiceAccount__AccessToken: "${SERVICE_ACCOUNT_TOKEN:-}"
       Authentication__Schemes__Bearer__ValidIssuer: "dotnet-user-jwts"
       Authentication__Schemes__Bearer__ValidAudiences__0: "http://localhost:5227"
       Authentication__Schemes__Bearer__SigningKeys__0__Issuer: "dotnet-user-jwts"
