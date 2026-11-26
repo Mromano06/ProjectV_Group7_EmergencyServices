@@ -76,7 +76,7 @@ public static class RegistrationTokens
     {
         RsaSecurityKey => $"Accepting Registration tokens: issuer {Issuer(config)}, audience {Audience(config)}, RS256 public key.",
         SymmetricSecurityKey => $"Accepting Registration tokens: issuer {Issuer(config)}, audience {Audience(config)}, HS256 secret.",
-        _ => "Registration tokens are NOT accepted yet: set REGISTRATION_PUBLIC_KEY or REGISTRATION_SIGNING_KEY in .env.",
+        _ => "Registration's own tokens are NOT accepted directly (not needed: the console signs in through /auth/login, which checks with Registration).",
     };
 
     private static string[] Combine(IEnumerable<string>? list, string? single, string extra) =>

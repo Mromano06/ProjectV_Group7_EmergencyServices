@@ -46,13 +46,15 @@ services:
       Services__BudgetBaseUrl: "${BUDGET_URL:-}"
       Services__TransitBaseUrl: "${TRANSIT_URL:-}"
       Services__HrBaseUrl: "${HR_URL:-}"
+      # Registration's login for the console (SH-S01). Their live API is used when this is empty.
+      Services__RegistrationBaseUrl: "${REGISTRATION_URL:-}"
       # Service-account token we send to other teams (SH-S07) – put it in .env, never in this file.
       ServiceAccount__AccessToken: "${SERVICE_ACCOUNT_TOKEN:-}"
       Authentication__Schemes__Bearer__ValidIssuer: "dotnet-user-jwts"
       Authentication__Schemes__Bearer__ValidAudiences__0: "http://localhost:5227"
       Authentication__Schemes__Bearer__SigningKeys__0__Issuer: "dotnet-user-jwts"
       Authentication__Schemes__Bearer__SigningKeys__0__Value: "${JWT_SIGNING_KEY}"
-      # Registration's tokens (SH-S01). Put ONE of these in the root .env when dosi sends it:
+      # Optional, not needed for the console login: accept Registration's own tokens directly if they ever share a key:
       #   REGISTRATION_PUBLIC_KEY=-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----   (RS256, safe to share)
       #   REGISTRATION_SIGNING_KEY=...                                                       (HS256 secret, never commit)
       Registration__PublicKey: "${REGISTRATION_PUBLIC_KEY:-}"

@@ -7,8 +7,9 @@ import { useAuth } from '../auth/AuthContext';
 import { useDispatchStore, type Connection } from '../state/DispatchContext';
 import { formatUntil } from '../utils/Labels';
 import '../styles/Panels.css';
+import '../styles/Login.css';
 
-// Always-visible bar above the panels: connection status, who is signed in, and every
+// Always-visible bar above the panels: connection status, who is signed in (with Sign out), and every
 // active weather / public warning (ES-FR-022 "app banner", issue #21). Warnings come from
 // GET /weather-warnings?active=true and refresh every 30 seconds.
 
@@ -19,7 +20,7 @@ const CONNECTION_LABEL: Record<Connection, string> = {
 };
 
 export default function TopBar() {
-  const { user } = useAuth();
+  const { user, usingDevToken, signOut } = useAuth();
   const { warnings, warningsState, warningsError, connection, now } = useDispatchStore();
 
   // Most serious first, then the one ending soonest.
@@ -34,6 +35,11 @@ export default function TopBar() {
         <span className={`conn-dot conn-${connection}`} aria-hidden="true" />
         <span role="status">{CONNECTION_LABEL[connection]}</span>
         <span className="topbar-user">· {user.name} ({user.role})</span>
+        {!usingDevToken && (
+          <button type="button" className="signout-btn" onClick={() => signOut('You signed out.')}>
+            Sign out
+          </button>
+        )}
       </div>
 
       <section className="topbar-warnings" aria-label="Active weather warnings">
