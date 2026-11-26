@@ -99,17 +99,23 @@ builder.Services.AddDbContext<EmergencyDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("EmergencyDb")));
 
-// Login / roles (SH-S01, SH-S03)
-// Users log in through Registration, which issues the JWT; we validate it on every request.
-// Dev tokens: "Authentication:Schemes:Bearer" settings (`dotnet user-jwts create` fills them in).
-// Registration tokens: the "Registration" settings (issuer, audience, and their public key or secret
-// from .env), added below next to the dev ones. See Auth/RegistrationTokens.cs.
+// Login / roles (SH-S01, SH-S03): every request's JWT is validated.
+// Tokens are made by our own sign-in (AuthController, after Registration checks the password) or, for
+// local testing, by `dotnet user-jwts create`. Both use the "Authentication:Schemes:Bearer" settings.
+// Optional: Registration's own tokens are also accepted if they ever share a key ("Registration" settings,
+// Auth/RegistrationTokens.cs). Not needed for the console login.
 builder.Services.AddAuthentication().AddJwtBearer();
 builder.Services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme,
     o => RegistrationTokens.Accept(o.TokenValidationParameters, builder.Configuration));
 
 // Registration's plain roles (Manager, Dispatcher, User) -> our emergency:* roles. See appsettings "RoleMapping".
 builder.Services.AddTransient<IClaimsTransformation, RegistrationRoleMapper>();
+
+// Console sign-in (SH-S01), as Registration's Auth Guide says: POST /api/emergency/v1/auth/login checks the
+// username and password with Registration (authenticate, then validate), then we give the console our own
+// token, signed with the dev/JWT_SIGNING_KEY settings above. See Controllers/AuthController.cs.
+builder.Services.AddSingleton<EmergencyTokenIssuer>();
+builder.Services.AddLoginRateLimit(); // max 20 sign-in tries a minute (see Auth/LoginRateLimit.cs)
 
 builder.Services.AddAuthorization(options =>
 {
@@ -160,7 +166,7 @@ builder.Services.AddScoped<IServiceTokenProvider, DevelopmentServiceTokenProvide
 // Normally every call goes through the shared API gateway: Services__GatewayBaseUrl.
 // Until the class gateway exists, a team's own URL can be set instead and wins over the gateway, e.g.
 //   Services__BudgetBaseUrl=https://<budget-app>.azurewebsites.net/
-// Teams: Transit (warnings, incident notices, road closures), Budget, Hr.
+// Teams: Transit (warnings, incident notices, road closures), Budget, Hr, Registration (login).
 string? ServiceUrl(string team)
 {
     var url = builder.Configuration[$"Services:{team}BaseUrl"];
@@ -185,6 +191,14 @@ builder.Services.AddHttpClient<BudgetFinanceClient>(http => UseService(http, "Bu
 
 // HR / Staff (ES-FR-026)
 builder.Services.AddHttpClient<StaffHrClient>(http => UseService(http, "Hr"));
+
+// Registration: checks usernames and passwords for the console login (SH-S01).
+// Their live API unless Services__RegistrationBaseUrl (REGISTRATION_URL in .env) says otherwise.
+builder.Services.AddHttpClient<IRegistrationLoginClient, RegistrationLoginClient>(http =>
+{
+    UseService(http, "Registration");
+    http.BaseAddress ??= new Uri(RegistrationLoginClient.DefaultBaseUrl);
+});
 
 builder.Services.AddScoped<IPatientTransportService, PatientTransportService>();
 
@@ -250,6 +264,7 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication(); // must come BEFORE UseAuthorization
 app.UseAuthorization();
+app.UseRateLimiter(); // for the sign-in limit on /auth/login
 
 app.MapControllers();
 
