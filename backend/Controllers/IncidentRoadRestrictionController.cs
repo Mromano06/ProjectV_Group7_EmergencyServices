@@ -11,10 +11,10 @@ namespace MyApplication.Api.Controllers;
 
 /// <summary>
 /// ES-FR-015 / SH-C13 / PT-FR-019: tell Public Transport about incidents that block roads, so they can
-/// re-route buses. Sent to Transit's POST /api/transport/v1/integrations/emergency/incidents (their Swagger,
-/// Nov 25) with our incident ID as external_id, so:
+/// re-route buses. Sent to Transit's POST /api/transport/v1/road-closures (their updated Swagger, Nov 26)
+/// with our Registration Bearer token (SH-S07) and our incident ID as external_id, so:
 ///   POST   = send the restriction, or update it (same incident ID -> Transit updates its record)
-///   DELETE = clear it (same incident ID, status "resolved", ends now)
+///   DELETE = clear it (same incident ID, status "resolved")
 /// </summary>
 [ApiController]
 [Route("api/emergency/v1/incidents/{incidentId:guid}/road-restriction")]
@@ -46,7 +46,7 @@ public sealed class IncidentRoadRestrictionController(
         var now = DateTime.UtcNow;
         var notice = Build(incident, request.AffectedArea.Trim(), request.RestrictionType.Trim(), ActiveStatus, now, endsAt);
 
-        if (!await transit.SendEmergencyIncidentAsync(notice))
+        if (!await transit.SendRoadClosureAsync(notice))
             return Error(502, "transit_unavailable",
                 "Public Transport did not accept the road restriction. Try again; the incident itself is unchanged.");
 
@@ -64,10 +64,13 @@ public sealed class IncidentRoadRestrictionController(
         if (incident is null) return Error(404, "incident_not_found", "Incident not found.");
 
         var now = DateTime.UtcNow;
-        var notice = Build(incident, incident.Location.Address ?? "Incident location", "Restriction cleared",
-            ClearedStatus, now, now);
+        // Transit's Integration Guide: resolving is just the same external_id, a title and status "resolved".
+        var resolution = new TransitRoadClosureResolution(
+            ExternalId: incident.Id.ToString(),
+            Title: $"{incident.Type} emergency – road reopened",
+            Status: ClearedStatus);
 
-        if (!await transit.SendEmergencyIncidentAsync(notice))
+        if (!await transit.ResolveRoadClosureAsync(resolution))
             return Error(502, "transit_unavailable",
                 "Public Transport did not accept the update. Try again; the incident itself is unchanged.");
 
@@ -75,29 +78,36 @@ public sealed class IncidentRoadRestrictionController(
         return Ok(new RoadRestrictionResult(incident.Id, true, now, ClearedStatus));
     }
 
-    /// <summary>Our incident in Transit's EmergencyIncidentInput shape.</summary>
-    private TransitEmergencyIncident Build(Incident incident, string affectedArea, string restrictionType,
+    /// <summary>Our incident in the shape of Transit's POST /road-closures body.</summary>
+    private TransitRoadClosure Build(Incident incident, string affectedArea, string restrictionType,
         string status, DateTime startUtc, DateTime endUtc)
     {
-        // The street goes in affected_segments so Transit (and other teams reading their closures) can match it.
-        var street = SharedAddress.Parse(incident.Location.Address).StreetName;
+        // SH-I06: Transit requires the shared address object. Incidents keep a free-text address,
+        // so split it; if it names no city, use Services:TransitDefaultCity (the city we serve).
+        var address = SharedAddress.Parse(incident.Location.Address);
+        var defaultCity = config["Services:TransitDefaultCity"];
+        if (string.IsNullOrWhiteSpace(address.City) && !string.IsNullOrWhiteSpace(defaultCity))
+            address = address with { City = defaultCity.Trim() };
+
+        // The street also goes in affected_segments so Transit (and other teams reading their closures) can match it.
+        var street = address.StreetName;
         var radius = config.GetValue<double?>("Services:TransitIncidentRadiusMeters") ?? 250;
 
-        return new TransitEmergencyIncident(
+        return new TransitRoadClosure(
             ExternalId: incident.Id.ToString(),
-            ExternalReference: "EMS-" + incident.Id.ToString("N")[..8].ToUpperInvariant(),
+            SourceService: TransitRoadClosure.Source,
             Title: $"{incident.Type} emergency – {restrictionType}",
-            Description: $"{restrictionType}: {affectedArea}. Reported by Emergency Services.",
+            Description: $"{restrictionType}: {affectedArea}. {incident.Type} incident, {incident.Severity} severity. " +
+                         "Reported by Emergency Services.",
             Type: "road_closure",
-            IncidentType: incident.Type.ToString().ToLowerInvariant(),
-            Severity: incident.Severity.ToString().ToLowerInvariant(),
             Status: status,
+            Address: address,
             AffectedArea: affectedArea,
             AffectedSegments: string.IsNullOrWhiteSpace(street) || street == "Unknown location" ? [] : [street],
             Latitude: incident.Location.Latitude,
             Longitude: incident.Location.Longitude,
             RadiusMeters: radius,
-            StartTime: TransitEmergencyIncident.Rfc3339(startUtc),
-            EndTime: TransitEmergencyIncident.Rfc3339(endUtc));
+            StartTime: TransitRoadClosure.Rfc3339(startUtc),
+            ValidUntil: TransitRoadClosure.UnixSeconds(endUtc)); // absolute epoch seconds, never a duration
     }
 }

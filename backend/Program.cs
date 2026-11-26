@@ -1,4 +1,3 @@
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi;
 using Microsoft.AspNetCore.Mvc;
@@ -157,9 +156,6 @@ builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("database");
 
 
-// TODO: Remove once done
-// Adds tokens automaticall for dev
-builder.Services.AddScoped<IServiceTokenProvider, DevelopmentServiceTokenProvider>();
 
 
 // Where other teams' services live (SH-A03, SH-A06).
@@ -199,6 +195,16 @@ builder.Services.AddHttpClient<IRegistrationLoginClient, RegistrationLoginClient
     UseService(http, "Registration");
     http.BaseAddress ??= new Uri(RegistrationLoginClient.DefaultBaseUrl);
 });
+
+// Our Registration service account (SH-S07): the Bearer token sent to Transit, Budget and HR.
+// Logs in with ServiceAccount__Username / ServiceAccount__Password and caches the token until it expires
+// (or uses ServiceAccount__AccessToken if one is pasted in). One shared instance so the token is shared too.
+builder.Services.AddHttpClient(RegistrationServiceTokenProvider.HttpClientName, http =>
+{
+    UseService(http, "Registration");
+    http.BaseAddress ??= new Uri(RegistrationLoginClient.DefaultBaseUrl);
+});
+builder.Services.AddSingleton<IServiceTokenProvider, RegistrationServiceTokenProvider>();
 
 builder.Services.AddScoped<IPatientTransportService, PatientTransportService>();
 
