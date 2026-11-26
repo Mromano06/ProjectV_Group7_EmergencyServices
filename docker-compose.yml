@@ -1,0 +1,82 @@
+# Emergency Services – runs the whole thing with one command (SH-A04):
+#   docker compose up --build
+# Then open:
+#   App (frontend):  http://localhost:3000
+#   API directly:    http://localhost:5000/openapi/v1.json
+# Stop with Ctrl+C, or `docker compose down` (add -v to also wipe the database).
+
+services:
+
+  # ---------- SQL Server (Emergency's private database, SH-D01) ----------
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      # Local test password. Override it in a .env file next to this one (SA_PASSWORD=...) – don't commit .env (SH-A06).
+      MSSQL_SA_PASSWORD: "${SA_PASSWORD:-YourStrong!Passw0rd}"
+    volumes:
+      - emergency-db-data:/var/opt/mssql   # keeps data between restarts
+    healthcheck:
+      # "Is SQL Server ready to answer?" – the API waits for this before starting.
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q \"SELECT 1\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    # No "ports:" on purpose – only the API needs to reach it, and this way it
+    # doesn't clash with the emergency-sql container you run by hand on port 1433.
+
+  # ---------- The API (backend/Dockerfile) ----------
+  api:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      # Inside Docker the database's address is its service name "db", not localhost.
+      ConnectionStrings__EmergencyDb: "Server=db,1433;Database=EmergencyDb;User Id=sa;Password=${SA_PASSWORD:-YourStrong!Passw0rd};TrustServerCertificate=True"
+      # Create/update the tables automatically on startup (see Program.cs).
+      Database__MigrateOnStartup: "true"
+      # Add demo stations, units and hospitals to empty tables (SH-D03, backend/Data/SeedData.cs).
+      Database__SeedOnStartup: "true"
+      # Other teams' services. Use the class gateway once it exists, or each team's own URL until then
+      # (a team URL wins over the gateway). Put the real values in .env, e.g. BUDGET_URL=https://...
+      Services__GatewayBaseUrl: "${GATEWAY_URL:-}"
+      Services__BudgetBaseUrl: "${BUDGET_URL:-}"
+      Services__TransitBaseUrl: "${TRANSIT_URL:-}"
+      Services__HrBaseUrl: "${HR_URL:-}"
+      # Registration's login for the console (SH-S01). Their live API is used when this is empty.
+      Services__RegistrationBaseUrl: "${REGISTRATION_URL:-}"
+      # Service-account token we send to other teams (SH-S07) – put it in .env, never in this file.
+      ServiceAccount__AccessToken: "${SERVICE_ACCOUNT_TOKEN:-}"
+      Authentication__Schemes__Bearer__ValidIssuer: "dotnet-user-jwts"
+      Authentication__Schemes__Bearer__ValidAudiences__0: "http://localhost:5227"
+      Authentication__Schemes__Bearer__SigningKeys__0__Issuer: "dotnet-user-jwts"
+      Authentication__Schemes__Bearer__SigningKeys__0__Value: "${JWT_SIGNING_KEY}"
+      # Optional, not needed for the console login: accept Registration's own tokens directly if they ever share a key:
+      #   REGISTRATION_PUBLIC_KEY=-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----   (RS256, safe to share)
+      #   REGISTRATION_SIGNING_KEY=...                                                       (HS256 secret, never commit)
+      Registration__PublicKey: "${REGISTRATION_PUBLIC_KEY:-}"
+      Registration__SigningKey: "${REGISTRATION_SIGNING_KEY:-}"
+    ports:
+      - "5000:8080"   # your computer's port 5000 -> the API's port 8080
+    healthcheck:
+      # Calls GET /health inside the container (ES-NFR-001). The .NET image has no curl,
+      # so bash opens the connection itself. `docker compose ps` then shows (healthy).
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /health HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && head -n 1 <&3 | grep -q ' 200 '"]
+      interval: 15s
+      timeout: 6s
+      retries: 5
+      start_period: 30s
+
+  # ---------- The React app (frontend/Dockerfile) ----------
+  frontend:
+    build: ./frontend
+    depends_on:
+      - api
+    ports:
+      - "3000:80"     # your computer's port 3000 -> nginx inside the container
+
+volumes:
+  emergency-db-data:

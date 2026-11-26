@@ -8,7 +8,7 @@ namespace MyApplication.Api.Enums;
 /// </summary>
 public enum HospitalStatus
 {
-    Operational,
-    LimitedCapacity,
-    Unavailable
+    Open,
+    Diverting,
+    Closed
 }

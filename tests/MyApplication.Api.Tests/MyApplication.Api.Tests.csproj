@@ -17,8 +17,12 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.*" />
     <PackageReference Include="xunit" Version="2.*" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.*" />
-    <!-- A fake database that lives in memory, so tests don't need SQL Server running -->
+    <!-- Unit tests: a simple fake database that lives in memory -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="11.*-*" />
+    <!-- API tests: a real SQL database (SQLite) that lives in memory -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="11.*-*" />
+    <!-- Starts the real API in memory for the API tests -->
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="11.*-*" />
   </ItemGroup>
 
   <ItemGroup>

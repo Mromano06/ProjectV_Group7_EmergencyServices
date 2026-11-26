@@ -1,8 +1,17 @@
 PROJECT_NAME = "Emergency Services"
 OUTPUT_DIRECTORY = docs
-INPUT = backend
+
+INPUT = README.md frontend/README.md backend tests frontend/src docs/source
 RECURSIVE = YES
-OPTIMIZE_OUTPUT_JAVA = YES
+FILE_PATTERNS = *.cs *.md *.ts *.tsx
+EXTENSION_MAPPING = ts=JavaScript tsx=JavaScript
+MARKDOWN_SUPPORT = YES
+USE_MDFILE_AS_MAINPAGE = README.md
+
 EXTRACT_ALL = YES
 EXTRACT_PRIVATE = YES
-GENERATE_LATEX = NO
+SOURCE_BROWSER = YES
+WARN_IF_UNDOCUMENTED = YES
+WARN_NO_PARAMDOC = YES
+
+EXCLUDE_PATTERNS = */bin/* */obj/* */node_modules/* */dist/* docs/html/*

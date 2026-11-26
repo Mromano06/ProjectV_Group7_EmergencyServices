@@ -1,3 +1,10 @@
+/**
+ * @file App.css
+ * @brief Defines component-level styles for the dashboard and warning elements.
+ */
+
+
+
 .counter {
   font-size: 16px;
   padding: 5px 10px;
@@ -181,4 +188,27 @@
     right: 0;
     border-right-color: var(--border);
   }
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+.warning-card {
+  margin: 1rem auto;
+  padding: 1rem;
+  max-width: 600px;
+  border: 1px solid #555;
+  border-radius: 8px;
+  text-align: left;
+}
+
+.warning-card h3 {
+  margin-top: 0;
+}
+
+.transit-warning {
+  color: #ffcc00;
+  font-weight: bold;
 }

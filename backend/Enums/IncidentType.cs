@@ -1,4 +1,4 @@
-namespace EmergencyServices.Api.Enums;
+namespace MyApplication.Api.Enums;
 
 ///<summary>
 /// Defines emergency type
@@ -12,5 +12,4 @@ public enum IncidentType
     Hazmat,
     Weather,
     Other
-
 }

@@ -20,7 +20,10 @@ public class WeatherWarning : AuditableEntity
     /// <summary>Optional longer text shown when someone opens the warning.</summary>
     public string? Description { get; set; }
 
+    /// <summary> timestamp forecasted warning starts at </summary>
     public DateTime StartsAt { get; set; }
+
+    /// <summary> timestamp forecasted warning ends at </summary>
     public DateTime EndsAt { get; set; }
 
     /// <summary>Manual (Admin) or Simulated (random demo warning).</summary>

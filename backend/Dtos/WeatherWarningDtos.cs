@@ -1,7 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using MyApplication.Api.Enums;
+using MyApplication.Api.Models; 
 
-namespace MyApplication.Api.Models;
+namespace MyApplication.Api.Dtos;
 
 // "DTOs" = the shapes of JSON that go in and out of the API.
 // We use these instead of the database class so callers can't set things like Id or CreatedBy.

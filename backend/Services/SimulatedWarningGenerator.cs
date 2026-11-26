@@ -2,6 +2,7 @@ using MyApplication.Api.Data;
 using MyApplication.Api.Enums;
 using MyApplication.Api.Models;
 using Microsoft.EntityFrameworkCore;
+using MyApplication.Api.Dtos;
 
 namespace MyApplication.Api.Services;
 

@@ -344,8 +344,18 @@ npm run dev
 dotnet test                                    # all tests
 dotnet test tests/EmergencyServices.UnitTests  # unit tests only
 dotnet test tests/MyApplication.Api.Tests      # Unit tests for weather warnings
-
+dotnet test --filter "Category=Performance"    # ES-NFR-008 timing tests only
 ```
+
+**Performance on the demo machine (ES-NFR-008).** With `docker compose up` running, this times 20 incident
+creations and 20 unit assignments against the real app and SQL Server, and prints PASS/FAIL per the 2-second, 95% rule:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\perf-test.ps1
+```
+
+It uses the Admin/Dispatcher token in `frontend/.env` and leaves "PERF TEST" incidents behind, so reset the demo data
+afterwards with `docker compose down -v` then `docker compose up -d` (the seed data comes back on startup).
 
 | Type | Covers |
 |---|---|
