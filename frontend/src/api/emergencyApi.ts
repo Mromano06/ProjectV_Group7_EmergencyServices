@@ -81,6 +81,34 @@ export interface AfterActionReportBody {
 
 // ---------- Endpoints ----------
 
+/** Body for POST /incidents/{id}/road-restriction (ES-FR-015): what we tell Public Transport. */
+export interface RoadRestrictionBody {
+  affectedArea: string;
+  restrictionType: string;
+  /** UTC ISO time; must be in the future. */
+  estimatedEndAt: string;
+}
+
+/** Reply from POST / DELETE /incidents/{id}/road-restriction. */
+export interface RoadRestrictionResultDto {
+  incidentId: string;
+  sentToTransit: boolean;
+  sentAt: string;
+  status: 'active' | 'resolved' | string;
+}
+
+/** A road closure near an incident, read from Public Transport (ES-FR-010). */
+export interface NearbyRoadClosureDto {
+  id: string;
+  description: string | null;
+  expectedEndAt: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  /** null when Transit gave no coordinates (matched by street name instead). */
+  distanceKm: number | null;
+  matchedBy: 'distance' | 'street' | string;
+}
+
 export const emergencyApi = {
   listUnits: () => apiRequest<PagedResult<UnitDto>>('GET', `${BASE}/units?pageSize=100`),
   listStations: () => apiRequest<StationDto[]>('GET', `${BASE}/stations`),
@@ -99,6 +127,15 @@ export const emergencyApi = {
   releaseAssignment: (incidentId: string, assignmentId: string) =>
     apiRequest<AssignmentDto>('POST',
       `${BASE}/incidents/${incidentId}/assignments/${assignmentId}/release`),
+  /** ES-FR-015: tell Public Transport this incident blocks a road (sent again = updated). */
+  reportRoadRestriction: (incidentId: string, body: RoadRestrictionBody) =>
+    apiRequest<RoadRestrictionResultDto>('POST', `${BASE}/incidents/${incidentId}/road-restriction`, body),
+  /** ES-FR-015: tell Public Transport the road is open again. */
+  clearRoadRestriction: (incidentId: string) =>
+    apiRequest<RoadRestrictionResultDto>('DELETE', `${BASE}/incidents/${incidentId}/road-restriction`),
+  /** ES-FR-010: road closures within 1 km of (or on the same street as) the incident. */
+  nearbyRoadClosures: (incidentId: string) =>
+    apiRequest<NearbyRoadClosureDto[]>('GET', `${BASE}/incidents/${incidentId}/road-closures`),
   activeWarnings: () => apiRequest<WeatherWarningDto[]>('GET', `${BASE}/weather-warnings?active=true`),
   getBudget: () => apiRequest<BudgetDto>('GET', `${BASE}/budget`),
   /** Our API always sends it to Budget as department EMS. */

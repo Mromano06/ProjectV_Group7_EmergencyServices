@@ -354,6 +354,43 @@
 }
 .notice-btn:hover { background: var(--panel-line); }
 .notice-btn.active { color: #111827; background: var(--accent); border-color: var(--accent); }
+.notice-btn:disabled { opacity: 0.6; cursor: wait; }
+
+/* ---------- Road closures on an incident card (ES-FR-015, ES-FR-010) ---------- */
+.notice-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.chip-road { color: #fcd34d; border-color: #b45309; background: rgba(180, 83, 9, 0.15); }
+
+.road-form {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 2px;
+  padding: 6px 8px;
+  border: 1px solid var(--panel-line);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.2);
+  font-size: 12px;
+}
+.road-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.road-row .road-field { flex: 1 1 110px; }
+.road-field { display: flex; flex-direction: column; gap: 2px; }
+.road-field span { color: #9ca3af; font-size: 11px; }
+.road-field input,
+.road-field select {
+  padding: 3px 6px;
+  font: inherit;
+  color: var(--panel-text);
+  background: #111827;
+  border: 1px solid #4b5563;
+  border-radius: 4px;
+}
+.road-hint, .road-muted { margin: 0; color: #9ca3af; font-size: 11px; }
+.road-error { flex-basis: 100%; margin: 0; color: #fca5a5; font-size: 12px; }
+.road-nearby { border-top: 1px dashed var(--panel-line); padding-top: 6px; }
+.road-nearby-title { color: #9ca3af; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+.road-nearby ul { margin: 4px 0 0; padding-left: 16px; }
+.road-nearby li { margin: 2px 0; }
 
 
 
