@@ -63,7 +63,10 @@ function DispatchRow({ d, now, canCancel, onCancel }: RowProps) {
     </li>
   );
 }
-
+/**
+ * Displays each dispatch through its outbound, on-scene, and return phases.
+ * DispatchProvider manages timing; authorized users can cancel before the return phase.
+ */
 export default function DispatchTracker() {
   const { user } = useAuth();
   const { dispatches, now, cancelDispatch } = useDispatchStore();

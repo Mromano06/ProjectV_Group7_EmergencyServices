@@ -1,9 +1,21 @@
+/**
+ * @file AvailableUnitPanel.tsx
+ * @brief Lists available units and lets authorized users select one for a call.
+ *
+ * A mismatched unit can still be dispatched, but the call stays open until
+ * the required unit type arrives.
+ */
+
 import { useAuth } from '../auth/AuthContext';
 import { canManageDispatch } from '../auth/Permissions';
 import { useDispatchStore } from '../state/DispatchContext';
 import UnitBadge from '../components/UnitBadge';
 import '../styles/Panels.css';
-
+/**
+ * Lists active, available units and lets dispatch-capable users select one for a call.
+ * A unit of the wrong type can still be sent, but the call stays open until the
+ * required unit type arrives.
+ */
 export default function AvailableUnits() {
   const { user } = useAuth();
   const { units, notices, selectedNoticeId, selectedUnitId, selectUnit, sendSelected, busy } =

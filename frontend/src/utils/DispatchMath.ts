@@ -1,4 +1,16 @@
+/**
+ * @file DispatchMath.ts
+ * @brief Calculates simulated dispatch travel times and unit route positions.
+ */
+
+
 import type { ActiveDispatch } from '../types/models';
+
+
+/** Returns a simulated one-way travel time between 20 and 64 seconds. */
+
+/** Calculates a unit's position along its route: 0 at the station and 1 at the call. */
+
 
 // Travel time (20-65 s) from a station to a place. 
 export function estimateTravelMs(): number {

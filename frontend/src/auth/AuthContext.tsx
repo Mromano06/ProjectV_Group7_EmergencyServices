@@ -1,3 +1,8 @@
+/**
+ * @file AuthContext.tsx
+ * @brief Provides the current user's identity and role to frontend components.
+ */
+
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { getApiToken } from '../api/apiClient';
 import type { Role } from '../types/models';
@@ -23,7 +28,7 @@ export function AuthProvider({ children, initialRole }: { children: ReactNode; i
     </AuthContext.Provider>
   );
 }
-
+/** Returns the auth context; this hook must be used inside AuthProvider. */
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used inside AuthProvider');

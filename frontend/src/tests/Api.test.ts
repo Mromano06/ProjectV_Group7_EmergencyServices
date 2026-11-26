@@ -1,3 +1,8 @@
+/**
+ * @file Api.test.ts
+ * @brief Tests API request handling, DTO conversion, and JWT role parsing.
+ */
+
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, apiRequest } from '../api/apiClient';
 import { requiredUnitTypeFor, toHospital, toNotice, toUnit } from '../api/emergencyApi';

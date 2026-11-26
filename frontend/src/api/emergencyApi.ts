@@ -1,3 +1,9 @@
+/**
+ * @file emergencyApi.ts
+ * @brief Defines typed Emergency API endpoints and converts API data for the UI.
+ */
+
+
 // Every Emergency Services endpoint the dispatch console uses, plus converters
 // from the API's JSON to the shapes the components use.
 import { apiRequest } from './apiClient';

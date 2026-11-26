@@ -1,3 +1,8 @@
+/**
+ * @file apiClient.ts
+ * @brief Provides shared HTTP requests, bearer-token handling, and API errors.
+ */
+
 // Shared API client: every call goes to our own API (SH-U02) with the JWT attached.
 // The token comes from VITE_API_TOKEN in frontend/.env until Registration's login exists.
 

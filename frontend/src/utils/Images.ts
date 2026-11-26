@@ -1,3 +1,8 @@
+/**
+ * @file Images.ts
+ * @brief Maps unit types to their frontend image paths.
+ */
+
 import type { UnitType } from '../types/models';
 
 export const UNIT_IMAGES: Record<UnitType, string> = {

@@ -1,3 +1,8 @@
+/**
+ * @file Labels.test.ts
+ * @brief Tests warning end-time formatting and UTC date handling.
+ */
+
 import { describe, expect, it } from 'vitest';
 import { formatUntil } from '../utils/Labels';
 

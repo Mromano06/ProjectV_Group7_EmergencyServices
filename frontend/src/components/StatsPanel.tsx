@@ -1,3 +1,9 @@
+/**
+ * @file StatsPanel.tsx
+ * @brief Displays API incident statistics for a selected date range in a modal.
+ */
+
+
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { ApiError } from '../api/apiClient';
 import { emergencyApi, OPEN_STATUSES, toStats, type IncidentStats } from '../api/emergencyApi';

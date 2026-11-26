@@ -1,3 +1,10 @@
+/**
+ * @file token.ts
+ * @brief Reads user name and emergency role claims from the configured JWT.
+ *
+ * The API remains responsible for verifying and authorizing every request.
+ */
+
 import type { Role } from '../types/models';
 
 export interface AuthUser {

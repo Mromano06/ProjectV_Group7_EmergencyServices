@@ -1,3 +1,9 @@
+/**
+ * @file StatsPanel.test.tsx
+ * @brief Tests statistics date ranges, displayed results, modal behavior, and errors.
+ */
+
+
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
