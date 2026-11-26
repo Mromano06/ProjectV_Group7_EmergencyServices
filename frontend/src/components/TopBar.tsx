@@ -1,3 +1,8 @@
+/**
+ * @file TopBar.tsx
+ * @brief Displays API connection state, signed-in user, and active weather warnings.
+ */
+
 import { useAuth } from '../auth/AuthContext';
 import { useDispatchStore, type Connection } from '../state/DispatchContext';
 import { formatUntil } from '../utils/Labels';

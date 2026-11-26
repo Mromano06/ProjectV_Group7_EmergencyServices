@@ -1,3 +1,8 @@
+/**
+ * @file models.ts
+ * @brief Defines frontend incident, unit, dispatch, warning, and log data types.
+ */
+
 // Names and values match the Emergency API exactly (backend/Enums), so data can be used as-is.
 export const INCIDENT_TYPES = ['Fire', 'Medical', 'Rescue', 'Hazmat', 'Other'] as const;
 export type IncidentType = (typeof INCIDENT_TYPES)[number];

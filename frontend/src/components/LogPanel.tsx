@@ -1,3 +1,10 @@
+/**
+ * @file LogPanel.tsx
+ * @brief Displays dispatch activity and completion counts for the current session.
+ *
+ * The Statistics panel displays incident statistics retrieved from the API.
+ */
+
 import { useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { canManageDispatch, isAdmin } from '../auth/Permissions';
@@ -12,7 +19,10 @@ const LEVEL_ICON: Record<LogLevel, string> = { info: '•', success: '✔', warn
 function handleRespond(entry: LogEntry) {
   console.log('Respond to log entry', entry);
 }
-
+/**
+ * Shows dispatch activity and completion counts for this browser session.
+ * The Stats panel displays statistics retrieved from the API.
+ */
 export default function LogPanel() {
   const { user } = useAuth();
   const { logs, records, hospitals, addTestWarning, clearLog } = useDispatchStore();

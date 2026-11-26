@@ -1,3 +1,8 @@
+/**
+ * @file apiClient.ts
+ * @brief Provides shared HTTP requests, bearer-token handling, and API errors.
+ */
+
 // Shared API client: every call goes to our own API (SH-U02) with the JWT attached.
 // The token comes from signing in (LoginScreen -> POST /auth/login, SH-S01). It is kept in
 // sessionStorage, so it survives a page refresh and is gone when the tab is closed.

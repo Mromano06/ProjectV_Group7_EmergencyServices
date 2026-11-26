@@ -1,3 +1,9 @@
+/**
+ * @file Budget.test.tsx
+ * @brief Tests budget display, Admin forms, validation, and API error handling.
+ */
+
+
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';

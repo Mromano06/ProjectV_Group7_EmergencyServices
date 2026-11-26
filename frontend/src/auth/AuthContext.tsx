@@ -84,7 +84,7 @@ export function AuthProvider({ children, initialRole }: { children: ReactNode; i
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
-
+/** Returns the auth context; this hook must be used inside AuthProvider. */
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used inside AuthProvider');

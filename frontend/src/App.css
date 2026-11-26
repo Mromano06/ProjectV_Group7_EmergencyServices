@@ -1,3 +1,10 @@
+/**
+ * @file App.css
+ * @brief Defines component-level styles for the dashboard and warning elements.
+ */
+
+
+
 .counter {
   font-size: 16px;
   padding: 5px 10px;

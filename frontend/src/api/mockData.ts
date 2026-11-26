@@ -1,3 +1,8 @@
+/**
+ * @file mockData.ts
+ * @brief Creates sample incident payloads for the dashboard's test-call action.
+ */
+
 // Random test calls for the "+ Test call" button. They are created as REAL incidents through
 // POST /incidents, exactly like a call forwarded by Security, so the whole flow is exercised.
 // (Units, stations and hospitals now come from the API – see backend/Data/SeedData.cs.)

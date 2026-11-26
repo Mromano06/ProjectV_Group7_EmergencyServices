@@ -1,3 +1,8 @@
+/**
+ * @file Labels.ts
+ * @brief Formats dates, times, severity labels, and durations for the dashboard.
+ */
+
 import type { Severity } from '../types/models';
 
 export const SEVERITY_LABEL: Record<Severity, string> = {

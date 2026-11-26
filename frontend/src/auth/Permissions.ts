@@ -1,3 +1,9 @@
+/**
+ * @file Permissions.ts
+ * @brief Defines role checks used to control which actions the UI displays.
+ */
+
+
 import type { Role } from '../types/models';
 
 // What the console SHOWS for each role (SH-S05). The API checks every request again (SH-S03).

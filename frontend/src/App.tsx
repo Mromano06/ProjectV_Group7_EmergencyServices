@@ -5,6 +5,13 @@ import LogPanel from './components/LogPanel';
 import BudgetPanel from './components/BudgetPanel';
 import TopBar from './components/TopBar';
 import './App.css'
+/**
+ * @file App.tsx
+ * @brief Renders the main emergency-services dashboard.
+ *
+ * Combines top bar with panels for available units, dispatch,
+ * notifications, activity logs, and budget information.
+ */
 
 function App() {
   return (

@@ -1,3 +1,9 @@
+/**
+ * @file Notifs.test.tsx
+ * @brief Tests dashboard calls, unit dispatch, API interactions, and role-based controls.
+ */
+
+
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';

@@ -5,6 +5,11 @@ import App from './App.tsx'
 import { AuthProvider } from './auth/AuthContext'
 import AuthGate from './auth/AuthGate'
 
+/**
+ * @file main.tsx
+ * @brief Starts the React app and renders it with shared auth and dispatch state.
+ */
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider>

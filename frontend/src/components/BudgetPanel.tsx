@@ -1,3 +1,9 @@
+/**
+ * @file BudgetPanel.tsx
+ * @brief Displays budget totals and provides Admin-only expense and funding forms.
+ */
+
+
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { ApiError } from '../api/apiClient';
 import { emergencyApi, type BudgetDto } from '../api/emergencyApi';

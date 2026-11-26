@@ -1,3 +1,9 @@
+/**
+ * @file NotificationPanel.tsx
+ * @brief Lists active calls by severity and lets authorized users choose a destination.
+ */
+
+
 import { useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { canManageDispatch } from '../auth/Permissions';

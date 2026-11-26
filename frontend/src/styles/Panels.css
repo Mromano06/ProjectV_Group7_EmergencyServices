@@ -1,3 +1,9 @@
+/**
+ * @file Panels.css
+ * @brief Defines the dashboard panel layout and shared panel, unit, and dispatch styles.
+ */
+
+
 :root {
   --panel-bg: #111827;
   --panel-line: #1f2937;

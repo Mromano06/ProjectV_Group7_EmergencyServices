@@ -1,3 +1,11 @@
+/**
+ * @file DispatchContext.tsx
+ * @brief Manages dashboard dispatch state, API polling, and simulated unit trips.
+ *
+ * Also processes API effects when calls are completed or assignments released.
+ */
+
+
 import {
   createContext, useCallback, useContext, useEffect, useReducer, useRef,
   type ReactNode,
