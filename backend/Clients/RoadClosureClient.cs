@@ -1,4 +1,3 @@
-using System.Net.Http.Headers;
 using System.Text.Json;
 using MyApplication.Api.Dtos;
 using MyApplication.Api.Integration;
@@ -9,11 +8,11 @@ namespace MyApplication.Api.Clients;
 /// <summary>
 /// ES-FR-010 / SH-C17: reads current road closures from Public Transport, who collect them from
 /// every team (SH-C16). Never touches their database.
-/// Transit's Swagger (Nov 25): GET /api/transport/v1/road-closures returns disruptions.DisruptionResponse[]
-/// (snake_case): id, title, description, affected_area, affected_segments, start_time, end_time, status...
-/// with NO coordinates. It needs no login.
+/// Transit's Swagger (Nov 26): GET /api/transport/v1/road-closures is public (no login) and returns
+/// snake_case closures: id, title, description, affected_area, affected_segments, start_time, end_time,
+/// status, and – when the sender gave them – address, latitude/longitude/radius_meters and valid-until.
 /// </summary>
-public sealed class RoadClosureClient(HttpClient http, IServiceTokenProvider tokens, IConfiguration config)
+public sealed class RoadClosureClient(HttpClient http, IConfiguration config)
 {
     /// <summary>From Transit's Swagger (Nov 25). Can be changed with "Services:RoadClosuresPath".</summary>
     public const string DefaultPath = "api/transport/v1/road-closures";
@@ -38,12 +37,8 @@ public sealed class RoadClosureClient(HttpClient http, IServiceTokenProvider tok
         var path = config["Services:RoadClosuresPath"];
         using var request = new HttpRequestMessage(HttpMethod.Get, string.IsNullOrWhiteSpace(path) ? DefaultPath : path);
 
-        // Our service-account token when we have one (SH-S07); Registration has none for services yet.
-        string? token = null;
-        try { token = await tokens.GetTokenAsync(ct); }
-        catch (ExternalServiceException) { /* no service-account token configured yet */ }
-        if (!string.IsNullOrWhiteSpace(token))
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        // Public endpoint (Transit's Swagger, Nov 26): no Authorization header, so reading closures
+        // never waits on a Registration login.
 
         var incidentStreet = SharedAddress.NormalizeStreet(SharedAddress.Parse(incidentAddress).StreetName);
         if (incidentStreet == "unknown location") incidentStreet = string.Empty;
@@ -69,18 +64,22 @@ public sealed class RoadClosureClient(HttpClient http, IServiceTokenProvider tok
             foreach (var row in root.EnumerateArray())
             {
                 if (row.ValueKind != JsonValueKind.Object) continue;
-                var endsAt = Date(row, "end_time", "expectedEndAt", "estimatedEndAt", "endsAt", "endTime", "expectedEndTime", "reopensAt");
+                var endsAt = Date(row, "end_time", "expectedEndAt", "estimatedEndAt", "endsAt", "endTime", "expectedEndTime", "reopensAt")
+                             ?? ValidUntil(row);
                 if (IsOver(Text(row, "status"), endsAt, now)) continue;
                 var place = row.TryGetProperty("location", out var loc) && loc.ValueKind == JsonValueKind.Object ? loc : row;
                 double? lat = Number(place, "latitude", "lat");
                 double? lon = Number(place, "longitude", "lng", "lon");
+                if (lat == 0 && lon == 0) { lat = null; lon = null; } // 0,0 = "no coordinates given", not the Gulf of Guinea
                 var address = AddressOf(row);
 
                 double? distance = lat.HasValue && lon.HasValue
                     ? DispatchService.DistanceKm(latitude, longitude, lat.Value, lon.Value)
                     : null;
+                // A closure covering a radius counts as near when its edge is within 1 km of the incident.
+                var radiusKm = Math.Max(0, Number(place, "radius_meters", "radiusMeters") ?? 0) / 1000.0;
                 string? matchedBy =
-                    distance <= NearbyKm ? "distance"
+                    distance - radiusKm <= NearbyKm ? "distance"
                     : distance is null && OnStreet(incidentStreet, StreetTexts(row, address)) ? "street"
                     : null;
                 if (matchedBy is null) continue;
@@ -185,6 +184,19 @@ public sealed class RoadClosureClient(HttpClient http, IServiceTokenProvider tok
             if (e.TryGetProperty(n, out var v) && v.ValueKind is JsonValueKind.String or JsonValueKind.Number)
                 return v.ToString();
         return null;
+    }
+
+    /// <summary>
+    /// Transit's valid-until (unsigned seconds): a Unix timestamp when &gt;= 1,000,000,000,
+    /// otherwise a duration counted from start_time.
+    /// </summary>
+    private static DateTimeOffset? ValidUntil(JsonElement row)
+    {
+        var seconds = Number(row, "valid-until", "valid_until", "validUntil");
+        if (seconds is null or < 0) return null;
+        if (seconds >= 1_000_000_000) return DateTimeOffset.FromUnixTimeSeconds((long)seconds.Value);
+        var start = Date(row, "start_time", "startTime");
+        return start?.AddSeconds(seconds.Value);
     }
 
     private static DateTimeOffset? Date(JsonElement e, params string[] names)

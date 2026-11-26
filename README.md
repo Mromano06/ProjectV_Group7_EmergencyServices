@@ -193,7 +193,9 @@ All configuration comes from **environment variables or `.env`**. Never hard-cod
 |---|---|
 | `ConnectionStrings__EmergencyDb` | SQL Server connection string (this service's database only) |
 | `Jwt__Issuer`, `Jwt__Audience`, `Jwt__SigningKey` | Validating JWTs issued by Registration |
-| `ServiceAccount__ClientId`, `ServiceAccount__Secret` | Service account for service-to-service calls |
+| `ServiceAccount__Username`, `ServiceAccount__Password` (`SERVICE_ACCOUNT_USERNAME` / `SERVICE_ACCOUNT_PASSWORD` in `.env`) | Registration login the API uses for service-to-service calls (SH-S07). It gets a Bearer token from Registration, sends it to Transit (required for `POST /road-closures`), Budget and HR, and logs in again when it expires |
+| `ServiceAccount__AccessToken` (`SERVICE_ACCOUNT_TOKEN`) | Optional pasted token for quick tests; wins over the username/password but stops working when it expires |
+| `Services__TransitDefaultCity` (`TRANSIT_DEFAULT_CITY`) | City put in the SH-I06 address sent to Transit when an incident's address has none |
 | `Services__GatewayBaseUrl` | Base URL of the API gateway |
 | `HttpClient__TimeoutSeconds` | Outbound call timeout (default `5`) |
 | `EnvironmentCanada__FeedUrl` | Public alert feed for the city |

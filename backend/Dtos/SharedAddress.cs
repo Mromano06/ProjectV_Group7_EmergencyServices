@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
 namespace MyApplication.Api.Dtos;
@@ -6,9 +7,14 @@ namespace MyApplication.Api.Dtos;
 /// The shared address shape every team agreed to use (SH-I06):
 /// { streetNumber, streetName, city, postalCode }. We use it to pull the street out of an incident's
 /// free-text address: it goes to Transit as affected_segments, and is matched against their road closures.
-/// (Transit's Swagger, Nov 25, takes free text plus coordinates rather than this shape.)
+/// Transit's POST /road-closures (their Swagger, Nov 26) takes it as its required "address" object,
+/// so the JSON names are fixed to the agreed camelCase ones.
 /// </summary>
-public sealed record SharedAddress(string? StreetNumber, string StreetName, string? City, string? PostalCode)
+public sealed record SharedAddress(
+    [property: JsonPropertyName("streetNumber")] string? StreetNumber,
+    [property: JsonPropertyName("streetName")] string StreetName,
+    [property: JsonPropertyName("city")] string? City,
+    [property: JsonPropertyName("postalCode")] string? PostalCode)
 {
     // "100 King St W, Cambridge, ON N1R 1A1"  ->  100 | King St W | Cambridge | N1R 1A1
     private static readonly Regex NumberAndStreet = new(@"^\s*(?<num>\d+[A-Za-z]?)\s+(?<street>.+)$");

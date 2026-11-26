@@ -48,8 +48,16 @@ services:
       Services__HrBaseUrl: "${HR_URL:-}"
       # Registration's login for the console (SH-S01). Their live API is used when this is empty.
       Services__RegistrationBaseUrl: "${REGISTRATION_URL:-}"
-      # Service-account token we send to other teams (SH-S07) – put it in .env, never in this file.
+      # Registration login the API uses to get the Bearer token Transit requires on POST /road-closures
+      # (Transit's Integration Guide: "admin/service-level credentials"). Also sent to Budget and HR.
+      # Put it in .env, never in this file:  SERVICE_ACCOUNT_USERNAME=...  SERVICE_ACCOUNT_PASSWORD=...
+      # The API logs in to Registration and reuses the token until it expires, then logs in again.
+      # SERVICE_ACCOUNT_TOKEN (a pasted token) still works for quick tests and wins if set.
+      ServiceAccount__Username: "${SERVICE_ACCOUNT_USERNAME:-}"
+      ServiceAccount__Password: "${SERVICE_ACCOUNT_PASSWORD:-}"
       ServiceAccount__AccessToken: "${SERVICE_ACCOUNT_TOKEN:-}"
+      # City added to the address sent to Transit when an incident's address doesn't name one (SH-I06).
+      Services__TransitDefaultCity: "${TRANSIT_DEFAULT_CITY:-}"
       Authentication__Schemes__Bearer__ValidIssuer: "dotnet-user-jwts"
       Authentication__Schemes__Bearer__ValidAudiences__0: "http://localhost:5227"
       Authentication__Schemes__Bearer__SigningKeys__0__Issuer: "dotnet-user-jwts"

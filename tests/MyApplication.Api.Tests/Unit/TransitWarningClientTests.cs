@@ -123,60 +123,87 @@ public class TransitWarningClientTests
         Assert.False(await MakeClient(new UnreachableHandler()).SendWarningNoticeAsync(Notice));
     }
 
-    // ---------- Road-restricting incidents (ES-FR-015, PT-FR-019) ----------
+    // ---------- Road closures from our incidents (ES-FR-015, PT-FR-019) ----------
 
-    private static readonly TransitEmergencyIncident Incident = new(
+    private static readonly TransitRoadClosure Closure = new(
         ExternalId: Guid.NewGuid().ToString(),
-        ExternalReference: "EMS-1234ABCD",
+        SourceService: TransitRoadClosure.Source,
         Title: "Fire emergency – Full closure",
-        Description: "Full closure: Main St between Water and Ainslie. Reported by Emergency Services.",
+        Description: "Full closure: Main St between Water and Ainslie. Fire incident, High severity. Reported by Emergency Services.",
         Type: "road_closure",
-        IncidentType: "fire",
-        Severity: "high",
         Status: "active",
+        Address: new SharedAddress("100", "Main St", "Cambridge", "N1R 1A1"),
         AffectedArea: "Main St between Water and Ainslie",
         AffectedSegments: ["Main St"],
         Latitude: 43.3601,
         Longitude: -80.3123,
         RadiusMeters: 250,
-        StartTime: TransitEmergencyIncident.Rfc3339(new DateTime(2026, 11, 25, 22, 30, 0, DateTimeKind.Utc)),
-        EndTime: TransitEmergencyIncident.Rfc3339(new DateTime(2026, 11, 26, 1, 30, 0, DateTimeKind.Utc)));
+        StartTime: TransitRoadClosure.Rfc3339(new DateTime(2026, 11, 25, 22, 30, 0, DateTimeKind.Utc)),
+        ValidUntil: TransitRoadClosure.UnixSeconds(new DateTime(2026, 11, 26, 1, 30, 0, DateTimeKind.Utc)));
 
     // TC-TRN-07
     [Fact]
     [Trait("Requirement", "ES-FR-015")]
-    public async Task Incident_GoesToTransitsEmergencyIntegration_InTheirSnakeCaseShape()
+    public async Task RoadClosure_GoesToTransitsRoadClosures_WithBearerToken_AddressAndValidUntil()
     {
         var gateway = new FakeGateway();
-        gateway.Respond(HttpMethod.Post, "/" + TransitWarningClient.DefaultEmergencyIncidentPath, HttpStatusCode.Created);
+        gateway.Respond(HttpMethod.Post, "/" + TransitWarningClient.DefaultRoadClosurePath, HttpStatusCode.Created);
 
-        var sent = await MakeClient(gateway).SendEmergencyIncidentAsync(Incident);
+        var sent = await MakeClient(gateway).SendRoadClosureAsync(Closure);
 
         Assert.True(sent);
         var request = Assert.Single(gateway.Requests);
-        Assert.Equal("/api/transport/v1/integrations/emergency/incidents", request.PathAndQuery); // Transit Swagger, PT-FR-019
-        Assert.Contains($"\"external_id\":\"{Incident.ExternalId}\"", request.Body);
-        Assert.Contains("\"affected_area\":\"Main St between Water and Ainslie\"", request.Body);
+        Assert.Equal("/api/transport/v1/road-closures", request.PathAndQuery);          // Transit Swagger (Nov 26)
+        Assert.Equal($"Bearer {FakeServiceTokenProvider.Token}", request.Authorization); // SH-S07, required
+        Assert.Contains("\"address\":{\"streetNumber\":\"100\",\"streetName\":\"Main St\",\"city\":\"Cambridge\",\"postalCode\":\"N1R 1A1\"}",
+            request.Body);                                                                // SH-I06, required
+        Assert.Contains("\"valid-until\":1795656600", request.Body);                     // epoch seconds, required
+        Assert.Contains($"\"external_id\":\"{Closure.ExternalId}\"", request.Body);   // idempotent upsert
+        Assert.Contains("\"source_service\":\"emergency\"", request.Body);
         Assert.Contains("\"affected_segments\":[\"Main St\"]", request.Body);
         Assert.Contains("\"latitude\":43.3601", request.Body);
         Assert.Contains("\"radius_meters\":250", request.Body);
-        Assert.Contains("\"start_time\":\"2026-11-25T22:30:00Z\"", request.Body);   // RFC 3339, UTC (SH-I04)
-        Assert.Contains("\"end_time\":\"2026-11-26T01:30:00Z\"", request.Body);
-        Assert.DoesNotContain("externalId", request.Body);                         // no camelCase names
+        Assert.DoesNotContain("end_time", request.Body);                                 // Transit: valid-until OR end_time, not both
+        Assert.DoesNotContain("externalId", request.Body);                               // no camelCase names
+        Assert.DoesNotContain("external_reference", request.Body);                       // Transit 400s if it differs from external_id
+        Assert.DoesNotContain("valid_until", request.Body);                              // hyphen, not underscore
     }
 
     // TC-TRN-08
     [Theory]
     [InlineData(HttpStatusCode.BadRequest)]
-    [InlineData(HttpStatusCode.Unauthorized)] // Transit's write endpoints want an admin browser session for now
+    [InlineData(HttpStatusCode.Unauthorized)] // token missing, expired or not accepted
     [InlineData(HttpStatusCode.Forbidden)]
     [Trait("Requirement", "SH-A07")]
-    public async Task Incident_TransitRefuses_ReturnsFalse(HttpStatusCode status)
+    public async Task RoadClosure_TransitRefuses_ReturnsFalse(HttpStatusCode status)
     {
         var gateway = new FakeGateway();
-        gateway.Respond(HttpMethod.Post, "/" + TransitWarningClient.DefaultEmergencyIncidentPath, status, new { error = "no" });
+        gateway.Respond(HttpMethod.Post, "/" + TransitWarningClient.DefaultRoadClosurePath, status, new { error = "no" });
 
-        Assert.False(await MakeClient(gateway).SendEmergencyIncidentAsync(Incident));
+        Assert.False(await MakeClient(gateway).SendRoadClosureAsync(Closure));
+    }
+
+    // TC-TRN-09
+    [Fact]
+    [Trait("Requirement", "ES-FR-015")]
+    public async Task ResolvingAClosure_SendsOnlyExternalIdTitleAndStatus()
+    {
+        var gateway = new FakeGateway();
+        gateway.Respond(HttpMethod.Post, "/" + TransitWarningClient.DefaultRoadClosurePath, HttpStatusCode.OK);
+
+        var sent = await MakeClient(gateway).ResolveRoadClosureAsync(
+            new TransitRoadClosureResolution(Closure.ExternalId, "Fire emergency – road reopened", "resolved"));
+
+        Assert.True(sent);
+        var request = Assert.Single(gateway.Requests);
+        Assert.Equal("/api/transport/v1/road-closures", request.PathAndQuery);          // same endpoint as create
+        Assert.Equal($"Bearer {FakeServiceTokenProvider.Token}", request.Authorization);
+        Assert.NotNull(request.Body);
+        using var body = System.Text.Json.JsonDocument.Parse(request.Body);
+        Assert.Equal(new[] { "external_id", "title", "status" },                         // Transit 400s on unknown fields
+            body.RootElement.EnumerateObject().Select(p => p.Name));
+        Assert.Equal(Closure.ExternalId, body.RootElement.GetProperty("external_id").GetString());
+        Assert.Equal("resolved", body.RootElement.GetProperty("status").GetString());
     }
 
     private sealed class MissingTokenProvider : IServiceTokenProvider

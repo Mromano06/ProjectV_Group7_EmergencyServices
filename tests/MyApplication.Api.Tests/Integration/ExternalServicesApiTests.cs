@@ -286,6 +286,37 @@ public class ExternalServicesApiTests : IClassFixture<EmergencyApiFactory>
         Assert.Equal("23", Assert.Single(closures).Id);
     }
 
+    // TC-API-EXT-23
+    [Fact]
+    [Trait("Requirement", "ES-FR-010")]
+    public async Task RoadClosures_UseValidUntil_AndRadius_FromTransitsNewShape()
+    {
+        // Transit's Swagger (Nov 26): closures can carry valid-until (epoch seconds, or seconds after start_time),
+        // coordinates with radius_meters, and 0,0 when the sender gave no coordinates.
+        var incident = await _dispatcher.CreateIncidentAsync(); // "100 King St W"
+        var now = DateTimeOffset.UtcNow;
+        Gateway.Respond(HttpMethod.Get, RoadClosuresPath, HttpStatusCode.OK, new object[]
+        {
+            new Dictionary<string, object> { ["id"] = 31, ["title"] = "Expired", ["affected_area"] = "King St W",
+                ["status"] = "active", ["valid-until"] = now.AddHours(-1).ToUnixTimeSeconds() },
+            new Dictionary<string, object> { ["id"] = 32, ["title"] = "Two more hours", ["affected_area"] = "King St W",
+                ["status"] = "active", ["latitude"] = 0, ["longitude"] = 0,
+                ["start_time"] = now.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'"), ["valid-until"] = 7200 },
+            new Dictionary<string, object> { ["id"] = 33, ["title"] = "Big area", ["affected_area"] = "Elsewhere",
+                ["status"] = "active", ["latitude"] = TestData.CityLat + 0.0135, ["longitude"] = TestData.CityLon,
+                ["radius_meters"] = 600 }                                            // ~1.5 km away, edge ~0.9 km
+        });
+
+        var closures = await (await _dispatcher.GetAsync($"/api/emergency/v1/incidents/{incident.Id}/road-closures"))
+            .ExpectAsync<List<NearbyRoadClosureDto>>(HttpStatusCode.OK);
+
+        Assert.Equal(new[] { "33", "32" }, closures.Select(c => c.Id));          // 31 has expired
+        Assert.Equal("distance", closures[0].MatchedBy);
+        Assert.Equal("street", closures[1].MatchedBy);                            // 0,0 treated as no coordinates
+        Assert.InRange(closures[1].ExpectedEndAt!.Value.ToUnixTimeSeconds(),
+            now.AddSeconds(7200).ToUnixTimeSeconds() - 2, now.AddSeconds(7200).ToUnixTimeSeconds() + 2);
+    }
+
     // TC-API-EXT-15
     [Fact]
     [Trait("Requirement", "ES-FR-025")]

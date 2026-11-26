@@ -15,17 +15,25 @@ public interface ITransitWarningClient
     Task<bool> SendWarningNoticeAsync(TransitWarningNotice notice);
 
     /// <summary>
-    /// ES-FR-015 / SH-C13 / PT-FR-019: send (or update, or clear) a road-restricting incident.
-    /// True if Transit accepted it. Same ExternalId = same record on Transit's side.
+    /// ES-FR-015 / SH-C13 / PT-FR-019: create, update or clear a road closure for one of our incidents
+    /// (POST /api/transport/v1/road-closures). True if Transit accepted it (201 created / 200 updated).
+    /// Same ExternalId = same record on Transit's side.
     /// </summary>
-    Task<bool> SendEmergencyIncidentAsync(TransitEmergencyIncident incident);
+    Task<bool> SendRoadClosureAsync(TransitRoadClosure closure);
+
+    /// <summary>
+    /// ES-FR-015: tells Transit the road is open again – same POST /road-closures, same external_id,
+    /// status "resolved". True if Transit accepted it.
+    /// </summary>
+    Task<bool> ResolveRoadClosureAsync(TransitRoadClosureResolution resolution);
 }
 
 /// <summary>
 /// Sends notices to Public Transport the same way our other integrations work:
 ///   - through the API gateway (SH-A03), or Transit's own URL until the gateway exists
-///   - with our service-account token (SH-S07) when we have one. Registration has no service
-///     accounts yet, so until then calls go out without a token rather than not at all.
+///   - with the Bearer token from our Registration login (SH-S07). Transit's Integration Guide requires it
+///     on POST /road-closures (no cookie or CSRF token). If we can't get a token the call still goes out
+///     without one and Transit's 401 is logged, rather than not sending at all.
 ///
 /// It never throws: if Transit or its URL isn't available it logs why and
 /// returns false, so our own work still succeeds when Transit is down (SH-A07).
@@ -39,8 +47,12 @@ public class TransitWarningClient : ITransitWarningClient
     /// </summary>
     public const string DefaultPath = "api/transit/v1/disruptions/weather-notices";
 
-    /// <summary>Emergency incidents / road restrictions: Transit's Swagger (Nov 25), PT-FR-019.</summary>
-    public const string DefaultEmergencyIncidentPath = "api/transport/v1/integrations/emergency/incidents";
+    /// <summary>
+    /// Road closures from our incidents: Transit's updated Swagger (Nov 26), PT-FR-019.
+    /// Replaces the earlier api/transport/v1/integrations/emergency/incidents endpoint.
+    /// Can be changed with "Services:TransitRoadClosurePath".
+    /// </summary>
+    public const string DefaultRoadClosurePath = "api/transport/v1/road-closures";
 
     private readonly HttpClient _http;
     private readonly IServiceTokenProvider _tokens;
@@ -63,10 +75,15 @@ public class TransitWarningClient : ITransitWarningClient
     public Task<bool> SendWarningNoticeAsync(TransitWarningNotice notice) =>
         SendAsync(PathOr("Services:TransitWarningPath", DefaultPath), notice, $"warning {notice.WarningId}");
 
-    /// <summary>sends a road-restricting incident to transit (ES-FR-015, PT-FR-019)</summary>
-    public Task<bool> SendEmergencyIncidentAsync(TransitEmergencyIncident incident) =>
-        SendAsync(PathOr("Services:TransitEmergencyIncidentPath", DefaultEmergencyIncidentPath), incident,
-            $"incident {incident.ExternalId} ({incident.Status})");
+    /// <summary>creates, updates or clears a road closure at transit (ES-FR-015, PT-FR-019)</summary>
+    public Task<bool> SendRoadClosureAsync(TransitRoadClosure closure) =>
+        SendAsync(PathOr("Services:TransitRoadClosurePath", DefaultRoadClosurePath), closure,
+            $"road closure for incident {closure.ExternalId} ({closure.Status})");
+
+    /// <summary>marks an incident's road closure resolved at transit (ES-FR-015)</summary>
+    public Task<bool> ResolveRoadClosureAsync(TransitRoadClosureResolution resolution) =>
+        SendAsync(PathOr("Services:TransitRoadClosurePath", DefaultRoadClosurePath), resolution,
+            $"road closure for incident {resolution.ExternalId} ({resolution.Status})");
 
     private string PathOr(string key, string fallback)
     {
@@ -90,7 +107,7 @@ public class TransitWarningClient : ITransitWarningClient
         }
         catch (ExternalServiceException ex)
         {
-            _logger.LogInformation("No service-account token ({Reason}) – sending {What} without one.", ex.Message, what);
+            _logger.LogWarning("No service-account token ({Reason}) – sending {What} without one; Transit will likely answer 401.", ex.Message, what);
         }
 
         using var request = new HttpRequestMessage(HttpMethod.Post, path)
@@ -110,8 +127,8 @@ public class TransitWarningClient : ITransitWarningClient
 
             var reason = await response.Content.ReadAsStringAsync();
             if (reason.Length > 300) reason = reason[..300];
-            // 401/403: Transit's write endpoints currently want an admin browser session (cookie + CSRF),
-            // not a service token, so our server's calls are refused until Transit changes that.
+            // 401: token missing, invalid or expired. 403: the Registration account lacks a role Transit allows.
+            // 400: a bad field value or timestamp, or a JSON field Transit doesn't know (they reject unknown fields).
             _logger.LogWarning("Transit rejected {What}: HTTP {Status} {Reason}", what, (int)response.StatusCode, reason);
             return false;
         }

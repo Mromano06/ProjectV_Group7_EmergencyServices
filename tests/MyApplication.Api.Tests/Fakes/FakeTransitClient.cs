@@ -23,13 +23,23 @@ public class FakeTransitClient : ITransitWarningClient
         return Task.FromResult(ShouldSucceed);
     }
 
-    private readonly ConcurrentQueue<TransitEmergencyIncident> _incidents = new();
-    /// <summary>Road-restricting incidents we sent, updated or cleared (ES-FR-015, PT-FR-019), oldest first.</summary>
-    public IReadOnlyCollection<TransitEmergencyIncident> SentIncidents => _incidents.ToArray();
+    private readonly ConcurrentQueue<TransitRoadClosure> _closures = new();
+    /// <summary>Road closures we created, updated or cleared for our incidents (ES-FR-015, PT-FR-019), oldest first.</summary>
+    public IReadOnlyCollection<TransitRoadClosure> SentClosures => _closures.ToArray();
 
-    public Task<bool> SendEmergencyIncidentAsync(TransitEmergencyIncident incident)
+    public Task<bool> SendRoadClosureAsync(TransitRoadClosure closure)
     {
-        _incidents.Enqueue(incident);
+        _closures.Enqueue(closure);
+        return Task.FromResult(ShouldSucceed);
+    }
+
+    private readonly ConcurrentQueue<TransitRoadClosureResolution> _resolutions = new();
+    /// <summary>Road closures we marked resolved (road open again), oldest first.</summary>
+    public IReadOnlyCollection<TransitRoadClosureResolution> SentResolutions => _resolutions.ToArray();
+
+    public Task<bool> ResolveRoadClosureAsync(TransitRoadClosureResolution resolution)
+    {
+        _resolutions.Enqueue(resolution);
         return Task.FromResult(ShouldSucceed);
     }
 }

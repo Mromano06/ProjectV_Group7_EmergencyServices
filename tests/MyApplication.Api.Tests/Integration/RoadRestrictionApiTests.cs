@@ -6,7 +6,7 @@ namespace MyApplication.Api.Tests.Integration;
 
 /// <summary>
 /// ES-FR-015 / SH-C13 / PT-FR-019: marking an incident as road-restricting tells Public Transport
-/// (POST /api/transport/v1/integrations/emergency/incidents, their Swagger). Sending again updates it
+/// (POST /api/transport/v1/road-closures, their Swagger of Nov 26). Sending again updates it
 /// and DELETE clears it, always with the same incident ID (external_id).
 /// </summary>
 [Trait("Category", "Integration")]
@@ -35,8 +35,8 @@ public class RoadRestrictionApiTests : IClassFixture<EmergencyApiFactory>
         estimatedEndAt = endsAt ?? DateTime.UtcNow.AddHours(3)
     };
 
-    private List<TransitEmergencyIncident> SentFor(Guid incidentId) =>
-        _factory.Transit.SentIncidents.Where(n => n.ExternalId == incidentId.ToString()).ToList();
+    private List<TransitRoadClosure> SentFor(Guid incidentId) =>
+        _factory.Transit.SentClosures.Where(n => n.ExternalId == incidentId.ToString()).ToList();
 
     // TC-API-RR-01
     [Fact]
@@ -52,15 +52,18 @@ public class RoadRestrictionApiTests : IClassFixture<EmergencyApiFactory>
         Assert.Equal("active", result.Status);
         var sent = Assert.Single(SentFor(incident.Id));
         Assert.Equal("road_closure", sent.Type);
-        Assert.Equal("fire", sent.IncidentType);
-        Assert.Equal("high", sent.Severity);
+        Assert.Equal("emergency", sent.SourceService);
+        Assert.Contains("Fire incident, High severity", sent.Description);
         Assert.Equal("active", sent.Status);
+        Assert.Equal("100", sent.Address.StreetNumber);                             // SH-I06 address (required)
+        Assert.Equal("King St W", sent.Address.StreetName);
         Assert.Equal("King St W between Victoria and Water", sent.AffectedArea);   // location + affected area
         Assert.Equal(new[] { "King St W" }, sent.AffectedSegments);
         Assert.Contains("Full closure", sent.Title);                               // restriction type
         Assert.Equal(TestData.CityLat, sent.Latitude);
         Assert.Equal(TestData.CityLon, sent.Longitude);
-        Assert.Equal(TransitEmergencyIncident.Rfc3339(endsAt), sent.EndTime);      // estimated end, UTC (SH-I04)
+        Assert.Equal(TransitRoadClosure.UnixSeconds(endsAt), sent.ValidUntil);     // valid-until (required), epoch seconds
+        Assert.True(sent.ValidUntil >= 1_000_000_000);                             // never read as a duration
         Assert.EndsWith("Z", sent.StartTime);
     }
 
@@ -84,7 +87,7 @@ public class RoadRestrictionApiTests : IClassFixture<EmergencyApiFactory>
         Assert.Equal(2, sent.Count);                                   // same external_id both times
         Assert.Equal("King St W at Water St only", sent[1].AffectedArea);
         Assert.Contains("Lane closure", sent[1].Title);
-        Assert.Equal(TransitEmergencyIncident.Rfc3339(later), sent[1].EndTime);
+        Assert.Equal(TransitRoadClosure.UnixSeconds(later), sent[1].ValidUntil);
     }
 
     // TC-API-RR-09
@@ -99,9 +102,9 @@ public class RoadRestrictionApiTests : IClassFixture<EmergencyApiFactory>
             .ExpectAsync<RoadRestrictionResult>(HttpStatusCode.OK);
 
         Assert.Equal("resolved", result.Status);
-        var cleared = SentFor(incident.Id).Last();
-        Assert.Equal("resolved", cleared.Status);
-        Assert.True(DateTime.Parse(cleared.EndTime).ToUniversalTime() <= DateTime.UtcNow.AddSeconds(5)); // open again now
+        var cleared = Assert.Single(_factory.Transit.SentResolutions, r => r.ExternalId == incident.Id.ToString());
+        Assert.Equal("resolved", cleared.Status);                                   // same external_id, resolved
+        Assert.Contains("Fire emergency", cleared.Title);
     }
 
     // TC-API-RR-10
