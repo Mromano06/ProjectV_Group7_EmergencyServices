@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { ApiError } from '../api/apiClient';
 import { emergencyApi, OPEN_STATUSES, toStats, type IncidentStats } from '../api/emergencyApi';
-import type { IncidentStatus, IncidentType } from '../types/models';
+import { INCIDENT_TYPES, type IncidentStatus } from '../types/models';
 import '../styles/Panels.css';
 
 // ES-FR-024: incident statistics for a date range (or all time), from GET /stats.
@@ -17,9 +17,8 @@ import '../styles/Panels.css';
 const REFRESH_MS = 60_000;
 const ALL_TIME_FROM = '2000-01-01T00:00:00.000Z'; // "From" left empty = since the first incident
 
-// Types shown in "By type", in this order, with 0 when missing. Only these are shown, even if the API sends others.
-const TYPES: IncidentType[] = ['Fire', 'Medical', 'Rescue'];
-// Statuses are shown in this order; any other status the API sends is added after.
+// "By type" and "By status" show every known value in this order (0 when missing), then any other
+// value the API sends (e.g. Weather), so each table always adds up to the Incidents total (ES-FR-024).
 const STATUSES: IncidentStatus[] = [...OPEN_STATUSES, 'Resolved', 'Closed'];
 const STATUS_LABEL: Record<string, string> = { EnRoute: 'En route', OnScene: 'On scene' };
 
@@ -194,8 +193,8 @@ export default function StatsPanel({ onClose }: { onClose: () => void }) {
               <table className="stats-table">
                 <caption>By type</caption>
                 <tbody>
-                  {TYPES.map((type) => (
-                    <tr key={type}><th scope="row">{type}</th><td>{stats.byType[type] ?? 0}</td></tr>
+                  {countRows(INCIDENT_TYPES, stats.byType).map((r) => (
+                    <tr key={r.key}><th scope="row">{r.key}</th><td>{r.count}</td></tr>
                   ))}
                 </tbody>
               </table>

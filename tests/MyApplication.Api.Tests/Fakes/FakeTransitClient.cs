@@ -23,13 +23,13 @@ public class FakeTransitClient : ITransitWarningClient
         return Task.FromResult(ShouldSucceed);
     }
 
-    private readonly ConcurrentQueue<TransitIncidentNotice> _incidents = new();
-    /// <summary>Road-restricting incident notices we sent (ES-FR-015).</summary>
-    public IReadOnlyCollection<TransitIncidentNotice> SentIncidents => _incidents.ToArray();
+    private readonly ConcurrentQueue<TransitEmergencyIncident> _incidents = new();
+    /// <summary>Road-restricting incidents we sent, updated or cleared (ES-FR-015, PT-FR-019), oldest first.</summary>
+    public IReadOnlyCollection<TransitEmergencyIncident> SentIncidents => _incidents.ToArray();
 
-    public Task<bool> SendIncidentNoticeAsync(TransitIncidentNotice notice)
+    public Task<bool> SendEmergencyIncidentAsync(TransitEmergencyIncident incident)
     {
-        _incidents.Enqueue(notice);
+        _incidents.Enqueue(incident);
         return Task.FromResult(ShouldSucceed);
     }
 }
