@@ -9,6 +9,9 @@ import { useAuth } from '../auth/AuthContext';
 import { canManageDispatch } from '../auth/Permissions';
 import { useDispatchStore } from '../state/DispatchContext';
 import type { IncidentType, Severity, UnitType } from '../types/models';
+import { formatUntil } from '../utils/Labels';
+import { useRoadClosures } from '../state/RoadClosures';
+import { RoadClosureControls } from './RoadClosure';
 
 import '../styles/Panels.css';
 
@@ -50,9 +53,10 @@ function NoticeIcon({ value, alt }: { value: string; alt: string }) {
 
 export default function NotificationsPanel() {
   const { user } = useAuth();
-  const { now, notices, dispatches, selectedNoticeId, selectNotice, addTestNotice } =
+  const { now, notices, dispatches, selectedNoticeId, selectNotice, addTestNotice, logEvent } =
     useDispatchStore();
   const canManage = canManageDispatch(user.role);
+  const roads = useRoadClosures();
 
   // Severity first, then oldest first
   const sorted = [...notices].sort((a, b) => a.severity - b.severity || a.createdAt - b.createdAt);
@@ -79,6 +83,8 @@ export default function NotificationsPanel() {
             const responding = dispatches.filter(
               (d) => d.noticeId === n.id && d.phase !== 'returning',
             ).length;
+            // ES-FR-015: a road we told Transit is closed (hidden again once it's due to reopen)
+            const closure = roads.active[n.id]?.until > now ? roads.active[n.id] : undefined;
             return (
               <li
                 key={n.id}
@@ -104,15 +110,30 @@ export default function NotificationsPanel() {
                     <span className={`chip ${responding > 0 ? 'chip-ok' : 'chip-alert'}`}>
                       {responding > 0 ? `${responding} responding` : 'No unit sent'}
                     </span>
+                    {closure && (
+                      <span className="chip chip-road">
+                        🚧 Road closed · until {formatUntil(new Date(closure.until).toISOString(), now)}
+                      </span>
+                    )}
                   </div>
 
                   {canManage && (
-                    <button
-                      className={`notice-btn${selected ? ' active' : ''}`}
-                      onClick={() => selectNotice(selected ? null : n.id)}
-                    >
-                      {selected ? '✓ Destination set' : 'Set as destination'}
-                    </button>
+                    <div className="notice-actions">
+                      <button
+                        className={`notice-btn${selected ? ' active' : ''}`}
+                        onClick={() => selectNotice(selected ? null : n.id)}
+                      >
+                        {selected ? '✓ Destination set' : 'Set as destination'}
+                      </button>
+                      <RoadClosureControls
+                        notice={n}
+                        closure={closure}
+                        now={now}
+                        onSent={(c) => roads.markActive(n.id, c)}
+                        onCleared={() => roads.markCleared(n.id)}
+                        log={logEvent}
+                      />
+                    </div>
                   )}
                 </div>
               </li>

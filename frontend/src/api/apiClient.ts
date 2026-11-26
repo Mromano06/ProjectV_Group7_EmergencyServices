@@ -63,7 +63,7 @@ export function getApiToken(): string | undefined {
   return sessionToken ?? getDevToken();
 }
 
-type Method = 'GET' | 'POST' | 'PUT' | 'PATCH';
+type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 /** Calls the API and returns the JSON body (or undefined for an empty body). Throws ApiError on 4xx/5xx. */
 export async function apiRequest<T>(method: Method, url: string, body?: unknown): Promise<T> {

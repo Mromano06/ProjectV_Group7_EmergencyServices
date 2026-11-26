@@ -495,6 +495,8 @@ interface DispatchStore {
   addTestWarning: () => Promise<void>;
   refresh: () => Promise<void>;
   clearLog: () => void;
+  /** Adds an entry to the event log (e.g. "Road closure sent to Transit"). */
+  logEvent: (entry: Omit<NewLog, 'time'>) => void;
 }
 
 const DispatchContext = createContext<DispatchStore | null>(null);
@@ -688,7 +690,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
         selectedNoticeId: state.selectedNoticeId,
         selectedUnitId: state.selectedUnitId,
         selectNotice, selectUnit, sendSelected, cancelDispatch, addTestNotice,
-        addTestWarning, refresh, clearLog,
+        addTestWarning, refresh, clearLog, logEvent: log,
       }}
     >
       {children}
