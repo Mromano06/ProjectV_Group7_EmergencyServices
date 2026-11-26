@@ -1,9 +1,3 @@
-/**
- * @file StatsPanel.test.tsx
- * @brief Tests statistics date ranges, displayed results, modal behavior, and errors.
- */
-
-
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -83,17 +77,24 @@ describe('Stats window (ES-FR-024)', () => {
     expect(within(card('Deaths')).getByText('1')).toBeInTheDocument(); // from deathCount
   });
 
-  it('shows counts by type (Fire, Medical, Rescue only) and by status', async () => {
-    api.getStats.mockResolvedValue({ ...STATS, byType: { ...STATS.byType, Hazmat: 3 } });
+  it('shows every incident type, so "By type" adds up to the total, and counts by status', async () => {
+    // Hazmat and Other come from the console; Weather is a type only the API has.
+    api.getStats.mockResolvedValue({
+      ...STATS, totalIncidents: 17, byType: { ...STATS.byType, Hazmat: 3, Weather: 2 },
+    });
     showStats();
-    await screen.findByText('12');
+    await screen.findByText('17');
 
     const byType = screen.getByRole('table', { name: 'By type' });
     expect(within(byType).getByRole('row', { name: 'Fire 5' })).toBeInTheDocument();
     expect(within(byType).getByRole('row', { name: 'Medical 6' })).toBeInTheDocument();
     expect(within(byType).getByRole('row', { name: 'Rescue 1' })).toBeInTheDocument();
-    expect(within(byType).queryByText('Hazmat')).not.toBeInTheDocument();
-    expect(within(byType).queryByText('Other')).not.toBeInTheDocument();
+    expect(within(byType).getByRole('row', { name: 'Hazmat 3' })).toBeInTheDocument();
+    expect(within(byType).getByRole('row', { name: 'Other 0' })).toBeInTheDocument();   // known type, none yet
+    expect(within(byType).getByRole('row', { name: 'Weather 2' })).toBeInTheDocument(); // sent by the API, still shown
+    const typeTotal = within(byType).getAllByRole('cell')
+      .reduce((sum, cell) => sum + Number(cell.textContent), 0);
+    expect(typeTotal).toBe(17); // ES-FR-024: matches the Incidents total
 
     const byStatus = screen.getByRole('table', { name: 'By status' });
     expect(within(byStatus).getByRole('row', { name: 'En route 2' })).toBeInTheDocument();
